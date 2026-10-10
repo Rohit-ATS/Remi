@@ -16,7 +16,7 @@
     "compile": "node scripts/compile.mjs",
     "deploy": "node scripts/deploy.mjs",
     "verify-payment": "node scripts/verify-payment.mjs",
-    "dev": "npm run dev --workspaces --if-present",
+    "dev": "node scripts/dev.mjs",
     "dev:app": "npm run dev --workspace app",
     "dev:server": "npm run dev --workspace server",
     "build": "npm run build --workspace server && npm run build --workspace app",
