@@ -119,6 +119,26 @@ For mainnet, set `NETWORK=mainnet` and `TOKEN_ADDRESS` to AUSD's real address.
 The deploy script reads `decimals()` off that token before writing it anywhere —
 an 18-decimal token would misprice every payout by 10^12.
 
+## Deployed
+
+| | |
+| --- | --- |
+| Landing page | <https://rohit-ats.github.io/Remi/> |
+| App | <https://rohit-ats.github.io/Remi/app/> |
+
+[`.github/workflows/pages.yml`](.github/workflows/pages.yml) compiles the
+contracts, runs the tests, and publishes both on every push to `main`.
+
+The landing page is fully static and complete. **The app is a shell until a
+server is hosted** — GitHub Pages cannot run the backend that reads the chain
+and adds up the books, so with no API configured the app says so instead of
+failing with a fetch error. To make it live, host `server/` anywhere and set a
+repository variable `API_BASE` to its origin (Settings → Secrets and variables →
+Actions → Variables); the next deploy picks it up.
+
+Routing is hash-based, so a shared receipt (`#/r/12`) or Passport (`#/p/0x…`)
+link opens from a static host with no rewrite rules.
+
 ## Layout
 
 ```
