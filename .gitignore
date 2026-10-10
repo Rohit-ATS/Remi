@@ -9,3 +9,5 @@ artifacts/
 .DS_Store
 app/dist/
 server/dist/
+*.tsbuildinfo
+app/src/**/*.js
