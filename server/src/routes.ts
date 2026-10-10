@@ -7,6 +7,7 @@ import type { Config } from "./config.ts";
 import type { Store } from "./db.ts";
 import type { Indexer } from "./indexer.ts";
 import { buildBooks, toCsv, CATEGORIES } from "./books.ts";
+import { buildDashboard } from "./dashboard.ts";
 import { assess } from "./underwriting.ts";
 import { answer } from "./assistant.ts";
 
@@ -63,6 +64,17 @@ export function registerRoutes(
     }
     const limit = Math.min(Number(req.query.limit ?? 100) || 100, 500);
     return { payouts: store.payoutsByPayer(owner, limit) };
+  });
+
+  /** Everything the first screen needs, in one round trip. */
+  app.get<{ Querystring: { owner?: string } }>("/api/dashboard", async (req, reply) => {
+    const owner = req.query.owner;
+    if (!owner || !ADDRESS.test(owner)) {
+      return reply.code(400).send({ error: "owner must be a 20-byte hex address" });
+    }
+    const payouts = store.payoutsByPayer(owner, 500);
+    const payees = store.payeesByPayer(owner);
+    return buildDashboard(payouts, payees.length);
   });
 
   app.get<{ Querystring: { owner?: string } }>("/api/payees", async (req, reply) => {
