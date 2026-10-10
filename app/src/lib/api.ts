@@ -70,8 +70,25 @@ export type AssistantAnswer = {
   note: string | null;
 };
 
+/**
+ * Where the API lives.
+ *
+ * Empty means same origin, which is the case in development (Vite proxies /api)
+ * and in any deployment that puts the server behind the same host. A static
+ * host like GitHub Pages cannot run the server, so a build for one sets
+ * VITE_API_BASE to the hosted server's origin.
+ */
+const API_BASE = (import.meta.env.VITE_API_BASE ?? "").replace(/\/$/, "");
+
+export const apiBase = API_BASE;
+
+/** True when the app is served from a static host with no API configured. */
+export function apiIsUnconfigured(): boolean {
+  return API_BASE === "" && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(path, {
+  const response = await fetch(`${API_BASE}${path}`, {
     ...init,
     headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
   });
@@ -98,7 +115,7 @@ export const api = {
   books: (owner: string, month?: string) =>
     request<Books>(`/api/books?owner=${owner}${month ? `&month=${month}` : ""}`),
 
-  csvUrl: (owner: string) => `/api/books.csv?owner=${owner}`,
+  csvUrl: (owner: string) => `${API_BASE}/api/books.csv?owner=${owner}`,
 
   receipt: (receiptNo: number) =>
     request<{ receipt: Payout; verifyUrl: string | null }>(`/api/receipt/${receiptNo}`),

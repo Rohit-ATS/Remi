@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { api, type ServerConfig } from "./lib/api.ts";
+import { api, apiIsUnconfigured, type ServerConfig } from "./lib/api.ts";
 import { getStoredAccount, signOut, type StoredAccount } from "./lib/account.ts";
 import { useRoute, navigate } from "./lib/router.ts";
 import { Welcome } from "./screens/Welcome.tsx";
@@ -18,11 +18,11 @@ export function App() {
     api
       .config()
       .then(setConfig)
-      .catch((error: unknown) =>
+      .catch(() =>
         setConfigError(
-          error instanceof Error
-            ? `The Remi server is not reachable (${error.message}). Start it with \`npm run dev:server\`.`
-            : "The Remi server is not reachable.",
+          apiIsUnconfigured()
+            ? "static"
+            : "The Remi server is not reachable. Start it with `npm run dev:server`.",
         ),
       );
   }, []);
@@ -49,7 +49,24 @@ export function App() {
     return (
       <main className="shell">
         <Header account={null} />
-        <div className="notice notice-error">{configError}</div>
+        {configError === "static" ? (
+          <div className="stack">
+            <h1>Remi needs its server.</h1>
+            <p className="hushed">
+              This is a static build, so the part of Remi that reads the chain and adds up the
+              books is not running behind it. Payouts, Books and Passports all need it.
+            </p>
+            <div className="notice">
+              Run it locally with <code>npm run dev</code>, or build this app with{" "}
+              <code>VITE_API_BASE</code> pointed at a hosted Remi server.
+            </div>
+            <a className="btn btn-ghost" href="https://github.com/Rohit-ATS/Remi">
+              How to run it
+            </a>
+          </div>
+        ) : (
+          <div className="notice notice-error">{configError}</div>
+        )}
       </main>
     );
   }
