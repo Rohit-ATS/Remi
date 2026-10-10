@@ -30,5 +30,9 @@
   "dependencies": {
     "@category-labs/mera": "0.2.0",
     "viem": "2.57.4"
+  },
+  "allowScripts": {
+    "esbuild@0.25.12": true,
+    "esbuild@0.21.5": true
   }
 }
