@@ -1,0 +1,11 @@
+node_modules/
+dist/
+artifacts/
+.env
+.env.local
+*.db
+*.db-wal
+*.db-shm
+.DS_Store
+app/dist/
+server/dist/

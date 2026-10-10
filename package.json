@@ -1,0 +1,34 @@
+{
+  "name": "remi",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Payroll for contractors abroad that writes them an income record they own.",
+  "license": "MIT",
+  "type": "module",
+  "workspaces": [
+    "app",
+    "server"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "compile": "node scripts/compile.mjs",
+    "deploy": "node scripts/deploy.mjs",
+    "verify-payment": "node scripts/verify-payment.mjs",
+    "dev": "npm run dev --workspaces --if-present",
+    "dev:app": "npm run dev --workspace app",
+    "dev:server": "npm run dev --workspace server",
+    "build": "npm run build --workspace server && npm run build --workspace app",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
+  },
+  "devDependencies": {
+    "solc": "0.8.28",
+    "typescript": "5.9.3"
+  },
+  "dependencies": {
+    "@category-labs/mera": "0.2.0",
+    "viem": "2.57.4"
+  }
+}
