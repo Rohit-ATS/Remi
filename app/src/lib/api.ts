@@ -1,0 +1,119 @@
+// Client for the Remi server. Same origin, so passkeys stay scoped to one rpId.
+
+export type ServerConfig = {
+  network: "mainnet" | "testnet";
+  chainId: number;
+  rpcUrl: string;
+  payoutsAddress: `0x${string}` | null;
+  tokenAddress: `0x${string}` | null;
+  explorer: string | null;
+  categories: string[];
+};
+
+export type Payout = {
+  receipt_no: number;
+  payer: string;
+  payee: string;
+  amount: string;
+  label: string;
+  memo: string;
+  category: string;
+  timestamp: number;
+  tx_hash: string;
+  block_number: number;
+};
+
+export type Payee = { payer: string; label: string; wallet: string; country: string };
+
+export type Books = {
+  month: string;
+  previousMonth: string;
+  monthTotal: string;
+  previousMonthTotal: string;
+  byCategory: { category: string; total: string; count: number }[];
+  byPayee: { label: string; payee: string; total: string; count: number }[];
+  months: string[];
+  yearToDate: {
+    year: string;
+    total: string;
+    contractors: { label: string; payee: string; total: string; count: number; over1099: boolean }[];
+  };
+};
+
+export type Assessment = {
+  totalEarned: string;
+  payoutCount: number;
+  clientCount: number;
+  monthsActive: number;
+  monthsObserved: number;
+  firstPaidAt: number | null;
+  lastPaidAt: number | null;
+  medianMonthly: string;
+  byMonth: { month: string; total: string; count: number }[];
+  byClient: { payer: string; total: string; count: number; share: number }[];
+  stabilityScore: number;
+  signals: {
+    regularity: number;
+    concentration: number;
+    trend: number;
+    coverage: number;
+    confidence: number;
+  };
+  advanceCeiling: string;
+  reasons: string[];
+};
+
+export type AssistantAnswer = {
+  answer: string;
+  rows: { date: string; label: string; category: string; amount: string; memo: string }[];
+  source: "model" | "fallback";
+  note: string | null;
+};
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(path, {
+    ...init,
+    headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
+  });
+  if (!response.ok) {
+    let detail = `${response.status}`;
+    try {
+      const body = (await response.json()) as { error?: string };
+      if (body.error) detail = body.error;
+    } catch {
+      // A non-JSON error body is not worth surfacing; the status carries enough.
+    }
+    throw new Error(detail);
+  }
+  return (await response.json()) as T;
+}
+
+export const api = {
+  config: () => request<ServerConfig>("/api/config"),
+
+  payouts: (owner: string) => request<{ payouts: Payout[] }>(`/api/payouts?owner=${owner}`),
+
+  payees: (owner: string) => request<{ payees: Payee[] }>(`/api/payees?owner=${owner}`),
+
+  books: (owner: string, month?: string) =>
+    request<Books>(`/api/books?owner=${owner}${month ? `&month=${month}` : ""}`),
+
+  csvUrl: (owner: string) => `/api/books.csv?owner=${owner}`,
+
+  receipt: (receiptNo: number) =>
+    request<{ receipt: Payout; verifyUrl: string | null }>(`/api/receipt/${receiptNo}`),
+
+  passport: (address: string) =>
+    request<{ address: string; assessment: Assessment; payouts: Payout[] }>(
+      `/api/passport/${address}`,
+    ),
+
+  ask: (owner: string, question: string) =>
+    request<AssistantAnswer>("/api/assistant", {
+      method: "POST",
+      body: JSON.stringify({ owner, question }),
+    }),
+
+  /** Nudges the indexer so a fresh payout shows up without waiting for the poll. */
+  reindex: () => request<{ ok: boolean }>("/api/reindex", { method: "POST" }),
+};
