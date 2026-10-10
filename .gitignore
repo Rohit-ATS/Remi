@@ -12,3 +12,4 @@ server/dist/
 *.tsbuildinfo
 app/src/**/*.js
 _site/
+.gstack/

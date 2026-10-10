@@ -1,6 +1,7 @@
 name: Deploy to GitHub Pages
 
-# The marketing page is fully static and works as-is. The app is deployed too,
+# The marketing frontend is a React app and works standalone. The product app
+# is deployed beneath it too,
 # but it needs the Remi server to read the chain and add up the books, and a
 # static host cannot run one — so it is deployed as a shell that says so, and
 # becomes live the moment VITE_API_BASE points at a hosted server.
@@ -45,6 +46,11 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Build marketing frontend
+        env:
+          BASE_PATH: /${{ github.event.repository.name }}/
+        run: npm run build --workspace frontend
+
       - name: Build app
         env:
           # Pages serves this repo under /Remi/, and the app sits beneath it.
@@ -55,7 +61,7 @@ jobs:
       - name: Assemble site
         run: |
           mkdir -p _site
-          cp site/index.html _site/index.html
+          cp -r frontend/dist/. _site/
           cp -r app/dist _site/app
           # Without this, Pages runs Jekyll and drops files beginning with _.
           touch _site/.nojekyll

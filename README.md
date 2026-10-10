@@ -123,13 +123,13 @@ an 18-decimal token would misprice every payout by 10^12.
 
 | | |
 | --- | --- |
-| Landing page | <https://rohit-ats.github.io/Remi/> |
+| Marketing site | <https://rohit-ats.github.io/Remi/> |
 | App | <https://rohit-ats.github.io/Remi/app/> |
 
 [`.github/workflows/pages.yml`](.github/workflows/pages.yml) compiles the
 contracts, runs the tests, and publishes both on every push to `main`.
 
-The landing page is fully static and complete. **The app is a shell until a
+The marketing site is complete and standalone. **The app is a shell until a
 server is hosted** — GitHub Pages cannot run the backend that reads the chain
 and adds up the books, so with no API configured the app says so instead of
 failing with a fetch error. To make it live, host `server/` anywhere and set a
@@ -154,7 +154,7 @@ app/src/
   lib/vault.ts              the second key: AES-GCM over the payee book
   lib/intent.ts             the only code that can begin a payment
   screens/Passport.tsx      the worker's income record
-site/index.html             marketing page
+frontend/src/               marketing site (React, its own design system)
 ```
 
 Node's built-in SQLite and a hand-rolled `.env` reader keep the server free of

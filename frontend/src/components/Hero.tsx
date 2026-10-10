@@ -1,0 +1,157 @@
+import { useState } from "react";
+import { ArrowUpRight, Button, Check } from "./primitives.tsx";
+import { TICKER } from "../data/content.ts";
+
+/** The email capture. Validates in the browser; there is no list to post to yet. */
+function Capture({ appUrl }: { appUrl: string }) {
+  const [email, setEmail] = useState("");
+  const [state, setState] = useState<"idle" | "error" | "ok">("idle");
+
+  const submit = (event: React.FormEvent): void => {
+    event.preventDefault();
+    const valid = /^[^@\s]+@[^@\s.]+\.[^@\s]{2,}$/.test(email.trim());
+    setState(valid ? "ok" : "error");
+  };
+
+  return (
+    <div>
+      <form className="capture" onSubmit={submit} noValidate>
+        <label className="sr-only" htmlFor="email">
+          Your work email
+        </label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          placeholder="What's your work email?"
+          value={email}
+          autoComplete="email"
+          onChange={(event) => {
+            setEmail(event.target.value);
+            if (state !== "idle") setState("idle");
+          }}
+        />
+        <Button variant="accent" type="submit">
+          Get started free
+        </Button>
+      </form>
+
+      <p className="capture__note" data-state={state === "idle" ? undefined : state}>
+        {state === "error" && "That does not look like an email address."}
+        {state === "ok" && (
+          <>
+            <Check /> Noted. Remi is open source — you can run it today at{" "}
+            <a href={appUrl} style={{ textDecoration: "underline" }}>
+              the app
+            </a>
+            .
+          </>
+        )}
+        {state === "idle" && "No card, no contract. Your passkey is the whole account."}
+      </p>
+    </div>
+  );
+}
+
+export function Hero({ appUrl }: { appUrl: string }) {
+  return (
+    <section className="hero" id="top">
+      <div className="hero__dots dots" aria-hidden="true" />
+      <div className="shell hero__inner">
+        <p className="livestat">
+          Global average cost to send money abroad:
+          <span className="livestat__chip">6.49%</span>
+        </p>
+
+        <h1>Pay in seconds. Prove it forever.</h1>
+
+        <p className="hero__sub">
+          Payouts, books, and an income record your contractors actually{" "}
+          <span className="dotted" title="They hold the key. Not you, and not Remi.">
+            own
+          </span>{" "}
+          — settled in about a second.
+        </p>
+
+        <Capture appUrl={appUrl} />
+      </div>
+
+      <div className="shell">
+        <div className="showcase">
+          <div className="dots" aria-hidden="true" style={{ position: "absolute", inset: 0, opacity: 0.6 }} />
+          <div className="showcase__grid">
+            <div className="showcase__copy">
+              <p className="eyebrow" style={{ marginBottom: "0.7rem" }}>
+                One sentence, one Face ID
+              </p>
+              <h3>&ldquo;Pay Maria four hundred dollars for October&rdquo;</h3>
+              <p>
+                The parser reads it, the sheet confirms it, Face ID sends it. The money lands in
+                about a second and costs about a cent to move.
+              </p>
+              <ul className="showcase__list">
+                <li>
+                  <Check /> No seed phrase, no extension, no custody account
+                </li>
+                <li>
+                  <Check /> The books write themselves from the receipt
+                </li>
+                <li>
+                  <Check /> The worker gets a record they can take anywhere
+                </li>
+              </ul>
+            </div>
+
+            <div className="receiptcard">
+              <div className="receiptcard__top">
+                <span className="eyebrow">Receipt 0001</span>
+                <span className="stamp">PAID</span>
+              </div>
+              <p className="receiptcard__amount">$400.00</p>
+              <dl>
+                <div className="rowline">
+                  <dt>Recipient</dt>
+                  <dd>Maria · PH</dd>
+                </div>
+                <div className="rowline">
+                  <dt>Category</dt>
+                  <dd>Contractor</dd>
+                </div>
+                <div className="rowline">
+                  <dt>Network fee</dt>
+                  <dd>$0.012</dd>
+                </div>
+                <div className="rowline">
+                  <dt>Arrived in</dt>
+                  <dd>0.9s</dd>
+                </div>
+              </dl>
+              <p style={{ marginTop: "1rem", fontSize: "0.82rem", color: "var(--ink-faint)" }}>
+                Also written: Maria&rsquo;s 7th record, 3rd client <ArrowUpRight />
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/** The agents ticker. Duplicated once so the marquee loops without a seam. */
+export function Ticker() {
+  const items = [...TICKER, ...TICKER];
+  return (
+    <div className="ticker">
+      <span className="ticker__label">What a payout costs</span>
+      <div className="ticker__viewport">
+        <div className="ticker__track">
+          {items.map((item, index) => (
+            <span className="ticker__item" key={`${item.label}-${index}`} aria-hidden={index >= TICKER.length}>
+              {item.label}:<span className="ticker__value">{item.value}</span>
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
