@@ -39,9 +39,13 @@ const repoRoot = resolve(here, "..", "..");
 loadDotEnv(join(repoRoot, ".env"));
 
 const config = loadConfig();
-const app = Fastify({ logger: { level: process.env.LOG_LEVEL ?? "info" } });
+const app = Fastify({
+  logger: { level: process.env.LOG_LEVEL ?? "info" },
+  bodyLimit: 16 * 1024,
+  trustProxy: config.trustProxy,
+});
 
-await app.register(cors, { origin: true });
+await app.register(cors, { origin: config.corsOrigins });
 
 const store = new Store(config.dbPath);
 const indexer = new Indexer(config, store, makeClient(config), (msg) => app.log.info(msg));

@@ -20,12 +20,11 @@ export type Payout = {
   label: string;
   memo: string;
   category: string;
+  passport_eligible: boolean;
   timestamp: number;
   tx_hash: string;
   block_number: number;
 };
-
-export type Payee = { payer: string; label: string; wallet: string; country: string };
 
 export type Books = {
   month: string;
@@ -128,8 +127,6 @@ export const api = {
   dashboard: (owner: string) => request<Dashboard>(`/api/dashboard?owner=${owner}`),
 
   payouts: (owner: string) => request<{ payouts: Payout[] }>(`/api/payouts?owner=${owner}`),
-
-  payees: (owner: string) => request<{ payees: Payee[] }>(`/api/payees?owner=${owner}`),
 
   books: (owner: string, month?: string) =>
     request<Books>(`/api/books?owner=${owner}${month ? `&month=${month}` : ""}`),

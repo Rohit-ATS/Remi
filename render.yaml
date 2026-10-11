@@ -1,0 +1,57 @@
+services:
+  - type: web
+    name: remi-api
+    runtime: node
+    plan: starter
+    buildCommand: npm ci && npm run build --workspace server
+    startCommand: npm run start --workspace server
+    healthCheckPath: /api/health
+    disk:
+      name: remi-sqlite
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: 24.21.0
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: TRUST_PROXY
+        value: "true"
+      - key: DB_PATH
+        value: /var/data/remi.db
+      - key: NETWORK
+        value: testnet
+      - key: PAYOUTS_ADDRESS
+        sync: false
+      - key: TOKEN_ADDRESS
+        sync: false
+      - key: START_BLOCK
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: KIMI_REMOTE_ENABLED
+        value: "false"
+      - key: ASSISTANT_RATE_LIMIT
+        value: "20"
+      - key: ASSISTANT_RATE_LIMIT_PER_IP
+        value: "5"
+      - key: ASSISTANT_RATE_WINDOW_MS
+        value: "60000"
+      - key: ASSISTANT_MAX_CONCURRENT
+        value: "4"
+      - key: ASSISTANT_MAX_BUCKETS
+        value: "10000"
+
+  - type: web
+    name: remi-app
+    runtime: static
+    buildCommand: npm ci && npm run build --workspace app
+    staticPublishPath: app/dist
+    envVars:
+      - key: NODE_VERSION
+        value: 24.21.0
+      # Render supplies this at build time. Set it to the public remi-api URL.
+      - key: VITE_API_BASE
+        sync: false

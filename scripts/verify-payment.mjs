@@ -71,7 +71,7 @@ const chains = {
   }),
 };
 
-const GAS = { approve: 60_000n, payTo: 260_000n };
+const GAS = { approve: 60_000n, payTo: 180_000n };
 
 const recipient = process.argv[2];
 const amountArg = process.argv[3] ?? "1";
@@ -164,7 +164,7 @@ const hash = await wallet.writeContract({
   address: PAYOUTS_ADDRESS,
   abi: payoutsAbi,
   functionName: "payTo",
-  args: [recipient, amount, "verify", "scripted proof of settlement", "Contractor"],
+  args: [recipient, amount],
   gas: GAS.payTo,
 });
 
@@ -193,9 +193,7 @@ if (decoded) {
   console.log(`  payer      ${decoded.payer}`);
   console.log(`  payee      ${decoded.payee}`);
   console.log(`  amount     ${formatUnits(decoded.amount, decimals)}`);
-  console.log(`  label      ${decoded.label}`);
-  console.log(`  memo       ${decoded.memo}`);
-  console.log(`  category   ${decoded.category}`);
+  console.log(`  passport   ${decoded.passportEligible ? "attested" : "not attested"}`);
   console.log(`  timestamp  ${new Date(Number(decoded.timestamp) * 1000).toISOString()}`);
 } else {
   console.log("  the event did not decode, which should not happen on a successful payout");

@@ -3,7 +3,7 @@ import { api, type AssistantAnswer, type ServerConfig } from "../lib/api.ts";
 import { describeError, type StoredAccount } from "../lib/account.ts";
 import { parsePaymentIntent } from "../lib/intent.ts";
 import { formatUsd } from "../lib/money.ts";
-import { enablePayouts, preflight, savePayee, sendPayout } from "../lib/payouts.ts";
+import { enablePayouts, preflight, sendPayout } from "../lib/payouts.ts";
 import { useSpeech } from "../lib/speech.ts";
 import {
   findEntry,
@@ -150,7 +150,6 @@ export function Composer({
       const next = upsertEntry(book ?? [], entry);
       await savePayeeBook(account, next);
       setBook(next);
-      await savePayee(config, entry.label, entry.address as `0x${string}`, entry.country);
       setUnknownLabel(null);
       if (pending !== null) await openConfirm({ ...pending, entry });
     } catch (caught) {
@@ -171,12 +170,8 @@ export function Composer({
       }
 
       const sent = await sendPayout(config, {
-        label: pending.label,
         payeeAddress: pending.entry.address as `0x${string}`,
         amount: pending.amount,
-        memo: pending.memo,
-        category: pending.category,
-        labelIsSaved: true,
       });
 
       setPending(null);

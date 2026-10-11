@@ -48,15 +48,11 @@ function addTo(map: Record<string, string>, key: string, amount: bigint): void {
 }
 
 /** Aggregates the rows the model is allowed to talk about. */
-export function summarise(
-  rows: PayoutRow[],
-  countryOf: (payee: string) => string,
-): AssistantFacts {
+export function summarise(rows: PayoutRow[]): AssistantFacts {
   let total = 0n;
   const byCategory: Record<string, string> = {};
   const byPayee: Record<string, string> = {};
   const byMonth: Record<string, string> = {};
-  const countries: Record<string, string> = {};
 
   const sorted = [...rows].sort((a, b) => a.timestamp - b.timestamp);
   for (const r of sorted) {
@@ -65,8 +61,6 @@ export function summarise(
     addTo(byCategory, r.category || "Other", amount);
     addTo(byPayee, r.label || r.payee.slice(0, 10), amount);
     addTo(byMonth, iso(r.timestamp).slice(0, 7), amount);
-    const cc = countryOf(r.payee);
-    if (cc) addTo(countries, cc, amount);
   }
 
   return {
@@ -75,7 +69,7 @@ export function summarise(
     byCategory,
     byPayee,
     byMonth,
-    countries,
+    countries: {},
     range: {
       from: sorted.length > 0 ? iso(sorted[0]!.timestamp) : null,
       to: sorted.length > 0 ? iso(sorted[sorted.length - 1]!.timestamp) : null,
@@ -114,11 +108,10 @@ function fallbackAnswer(question: string, facts: AssistantFacts): string {
 export async function answer(
   question: string,
   rows: PayoutRow[],
-  countryOf: (payee: string) => string,
   config: Config,
   fetchImpl: typeof fetch = fetch,
 ): Promise<AssistantAnswer> {
-  const facts = summarise(rows, countryOf);
+  const facts = summarise(rows);
   const preview = [...rows]
     .sort((a, b) => b.timestamp - a.timestamp)
     .slice(0, 40)
@@ -130,13 +123,16 @@ export async function answer(
       memo: r.memo,
     }));
 
-  if (config.kimi.apiKey === null) {
+  if (config.kimi.apiKey === null || !config.kimi.enabled) {
     return {
       answer: fallbackAnswer(question, facts),
       facts,
       rows: preview,
       source: "fallback",
-      note: "KIMI_API_KEY is not set, so this answer was computed locally rather than written by the model.",
+      note:
+        config.kimi.apiKey === null
+          ? "KIMI_API_KEY is not set, so this answer was computed locally rather than written by the model."
+          : "Remote model calls are disabled, so this answer was computed locally.",
     };
   }
 

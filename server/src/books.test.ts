@@ -20,6 +20,7 @@ function row(over: Partial<PayoutRow> & { dollars?: number }): PayoutRow {
     label: "maria",
     memo: "",
     category: "Contractor",
+    passport_eligible: true,
     timestamp: at(2026, 10),
     tx_hash: "0xdead",
     block_number: 1,

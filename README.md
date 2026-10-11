@@ -68,11 +68,25 @@ that joins them.
 | Mera default | secp256k1 | Signs payouts. Derived per call, zeroed after. |
 | `sha256("remi.payeebook.v1")` | AES-GCM | Encrypts names and countries. Never signs. |
 
-The contract stores amounts, dates and counterparty addresses. Names live
-encrypted client-side under the second key, which is non-extractable and never
-stored. So a worker can send a landlord a link that proves the amounts settled
-without revealing who their clients are, and signing in on a new phone with the
-same Face ID recovers both keys — no seed phrase, no backup file, no server.
+The contract stores only amounts, dates and counterparty addresses. Names,
+countries, labels, categories and memos do not enter transaction calldata or
+events; the payer's name-and-country book stays encrypted client-side under the
+second key. A worker can send a landlord a link that proves administrator-attested
+amounts settled without revealing who their clients are.
+
+## Passport integrity
+
+An ordinary wallet transfer is settlement, not an income credential. The
+contract administrator attests a business before that business's payouts can
+increase a worker's Passport. This prevents a circle of wallets controlled by
+one person from manufacturing a score or illustrative advance by passing the
+same funds around. Use a dedicated multisig for `PAYOUTS_ADMIN`, and only add a
+payer after the review process appropriate for your launch.
+
+Local and testnet records use freely mintable DemoUSD and are explicitly demo
+data: Remi displays their settlement activity but never a credit-facing score
+or advance figure. Only mainnet, administrator-attested payouts are eligible
+for those calculations.
 
 ## The assistant is not a wrapper
 
@@ -120,7 +134,8 @@ Books, the Passport and the income score are all worth nothing without one.
 
 To settle on a real network instead, set `NETWORK=testnet` (chain 10143) with a
 funded `PRIVATE_KEY` in `.env`, or `NETWORK=mainnet` with `TOKEN_ADDRESS` set to
-AUSD's real address.
+AUSD's real address. Set `PAYOUTS_ADMIN` to a dedicated multisig before deploy;
+the deployer is attested automatically only when that variable is omitted.
 
 To prove a payout end to end:
 
@@ -155,13 +170,27 @@ Actions → Variables); the next deploy picks it up.
 Routing is hash-based, so a shared receipt (`#/r/12`) or Passport (`#/p/0x…`)
 link opens from a static host with no rewrite rules.
 
+## Deploying on Render
+
+[`render.yaml`](render.yaml) creates an API service and a static app. The API
+uses a paid persistent disk because SQLite's cursor and indexed receipts must
+survive restarts. During Blueprint setup provide the deployed contract values
+for `PAYOUTS_ADDRESS`, `TOKEN_ADDRESS`, and `START_BLOCK`; set `CORS_ORIGINS`
+to the exact public URL Render assigns to `remi-app`; then set `VITE_API_BASE`
+to the exact public URL of `remi-api` and deploy the static app again.
+
+Do not configure `PRIVATE_KEY` on the API. It cannot and must not sign payouts.
+The optional Kimi integration is disabled by default even with a key; retain the
+local assistant unless you put an edge rate limit and a provider spending cap in
+front of the API, then explicitly set `KIMI_REMOTE_ENABLED=true`.
+
 ## Layout
 
 ```
 contracts/RemiPayouts.sol   payout rail + income registry (both sides of a payout)
 scripts/                    compile, deploy, verify-payment
 server/src/
-  indexer.ts                PaymentSent/PayeeSaved -> SQLite, chunked, idempotent
+  indexer.ts                PaymentSent -> SQLite, chunked, idempotent
   underwriting.ts           deterministic income assessment
   books.ts                  payer-side totals, 1099 list, CSV
   assistant.ts              read-only narration of computed figures

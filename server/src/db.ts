@@ -14,16 +14,10 @@ export type PayoutRow = {
   label: string;
   memo: string;
   category: string;
+  passport_eligible: boolean;
   timestamp: number;
   tx_hash: string;
   block_number: number;
-};
-
-export type PayeeRow = {
-  payer: string;
-  label: string;
-  wallet: string;
-  country: string;
 };
 
 const SCHEMA = `
@@ -35,20 +29,13 @@ CREATE TABLE IF NOT EXISTS payouts (
   label        TEXT NOT NULL DEFAULT '',
   memo         TEXT NOT NULL DEFAULT '',
   category     TEXT NOT NULL DEFAULT 'Other',
+  passport_eligible INTEGER NOT NULL DEFAULT 0,
   timestamp    INTEGER NOT NULL,
   tx_hash      TEXT NOT NULL,
   block_number INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS payouts_payer ON payouts (payer, timestamp DESC);
 CREATE INDEX IF NOT EXISTS payouts_payee ON payouts (payee, timestamp DESC);
-
-CREATE TABLE IF NOT EXISTS payees (
-  payer   TEXT NOT NULL,
-  label   TEXT NOT NULL,
-  wallet  TEXT NOT NULL,
-  country TEXT NOT NULL DEFAULT '',
-  PRIMARY KEY (payer, label)
-);
 
 CREATE TABLE IF NOT EXISTS meta (
   key   TEXT PRIMARY KEY,
@@ -64,6 +51,14 @@ export class Store {
     this.db.exec("PRAGMA journal_mode = WAL");
     this.db.exec("PRAGMA foreign_keys = ON");
     this.db.exec(SCHEMA);
+    // V1 stored payer-supplied country strings in this local projection. V2
+    // never writes them, so remove the retired table rather than retaining PII.
+    this.db.exec("DROP TABLE IF EXISTS payees");
+    // Existing development databases predate attested Passport rows.
+    const columns = this.db.prepare("PRAGMA table_info(payouts)").all() as { name: string }[];
+    if (!columns.some((column) => column.name === "passport_eligible")) {
+      this.db.exec("ALTER TABLE payouts ADD COLUMN passport_eligible INTEGER NOT NULL DEFAULT 0");
+    }
   }
 
   close(): void {
@@ -85,17 +80,33 @@ export class Store {
       .run(block.toString());
   }
 
+  /** Starts a fresh index when the configured contract changes. Receipt numbers
+   * restart at one for a new deployment, so mixing contracts would corrupt the
+   * local projection and retain metadata from the retired contract. */
+  selectPayoutContract(address: string): boolean {
+    const normalized = address.toLowerCase();
+    const row = this.db.prepare("SELECT value FROM meta WHERE key = 'payouts_address'").get() as
+      | { value: string }
+      | undefined;
+    if (row?.value === normalized) return false;
+    this.db.exec("DELETE FROM payouts");
+    this.db.prepare("DELETE FROM meta WHERE key IN ('cursor', 'payouts_address')").run();
+    this.db.prepare("INSERT INTO meta (key, value) VALUES ('payouts_address', ?)").run(normalized);
+    return true;
+  }
+
   // --- writes --------------------------------------------------------------
 
   /** Idempotent: re-indexing the same log is a no-op, so a restart cannot double-count. */
   upsertPayout(p: PayoutRow): void {
     this.db
       .prepare(
-        `INSERT INTO payouts (receipt_no, payer, payee, amount, label, memo, category, timestamp, tx_hash, block_number)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `INSERT INTO payouts (receipt_no, payer, payee, amount, label, memo, category, passport_eligible, timestamp, tx_hash, block_number)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(receipt_no) DO UPDATE SET
            payer = excluded.payer, payee = excluded.payee, amount = excluded.amount,
            label = excluded.label, memo = excluded.memo, category = excluded.category,
+           passport_eligible = excluded.passport_eligible,
            timestamp = excluded.timestamp, tx_hash = excluded.tx_hash, block_number = excluded.block_number`,
       )
       .run(
@@ -106,33 +117,27 @@ export class Store {
         p.label,
         p.memo,
         p.category,
+        p.passport_eligible ? 1 : 0,
         p.timestamp,
         p.tx_hash,
         p.block_number,
       );
   }
 
-  upsertPayee(p: PayeeRow): void {
-    this.db
-      .prepare(
-        `INSERT INTO payees (payer, label, wallet, country) VALUES (?, ?, ?, ?)
-         ON CONFLICT(payer, label) DO UPDATE SET wallet = excluded.wallet, country = excluded.country`,
-      )
-      .run(p.payer.toLowerCase(), p.label, p.wallet.toLowerCase(), p.country);
-  }
-
   // --- reads ---------------------------------------------------------------
 
   payoutsByPayer(payer: string, limit = 200): PayoutRow[] {
+    const bounded = Math.max(1, Math.min(Math.floor(limit), 500));
     return this.db
       .prepare("SELECT * FROM payouts WHERE payer = ? ORDER BY timestamp DESC, receipt_no DESC LIMIT ?")
-      .all(payer.toLowerCase(), limit) as PayoutRow[];
+      .all(payer.toLowerCase(), bounded) as unknown as PayoutRow[];
   }
 
   payoutsByPayee(payee: string, limit = 200): PayoutRow[] {
+    const bounded = Math.max(1, Math.min(Math.floor(limit), 500));
     return this.db
       .prepare("SELECT * FROM payouts WHERE payee = ? ORDER BY timestamp DESC, receipt_no DESC LIMIT ?")
-      .all(payee.toLowerCase(), limit) as PayoutRow[];
+      .all(payee.toLowerCase(), bounded) as unknown as PayoutRow[];
   }
 
   payoutByReceipt(receiptNo: number): PayoutRow | undefined {
@@ -141,15 +146,8 @@ export class Store {
       | undefined;
   }
 
-  payeesByPayer(payer: string): PayeeRow[] {
-    return this.db
-      .prepare("SELECT * FROM payees WHERE payer = ? ORDER BY label")
-      .all(payer.toLowerCase()) as PayeeRow[];
-  }
-
-  counts(): { payouts: number; payees: number } {
+  counts(): { payouts: number } {
     const p = this.db.prepare("SELECT COUNT(*) AS n FROM payouts").get() as { n: number };
-    const q = this.db.prepare("SELECT COUNT(*) AS n FROM payees").get() as { n: number };
-    return { payouts: p.n, payees: q.n };
+    return { payouts: p.n };
   }
 }

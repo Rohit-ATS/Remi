@@ -261,15 +261,15 @@ export const remiPayoutsAbi = [
         "internalType": "address",
         "name": "token_",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "admin_",
+        "type": "address"
       }
     ],
     "stateMutability": "nonpayable",
     "type": "constructor"
-  },
-  {
-    "inputs": [],
-    "name": "EmptyLabel",
-    "type": "error"
   },
   {
     "inputs": [],
@@ -283,7 +283,7 @@ export const remiPayoutsAbi = [
   },
   {
     "inputs": [],
-    "name": "UnknownLabel",
+    "name": "Unauthorized",
     "type": "error"
   },
   {
@@ -295,37 +295,6 @@ export const remiPayoutsAbi = [
     "inputs": [],
     "name": "ZeroAmount",
     "type": "error"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "payer",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "label",
-        "type": "string"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "wallet",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "country",
-        "type": "string"
-      }
-    ],
-    "name": "PayeeSaved",
-    "type": "event"
   },
   {
     "anonymous": false,
@@ -356,21 +325,9 @@ export const remiPayoutsAbi = [
       },
       {
         "indexed": false,
-        "internalType": "string",
-        "name": "label",
-        "type": "string"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "memo",
-        "type": "string"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "category",
-        "type": "string"
+        "internalType": "bool",
+        "name": "passportEligible",
+        "type": "bool"
       },
       {
         "indexed": false,
@@ -381,6 +338,38 @@ export const remiPayoutsAbi = [
     ],
     "name": "PaymentSent",
     "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "payer",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "trusted",
+        "type": "bool"
+      }
+    ],
+    "name": "TrustedPayerSet",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "admin",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   },
   {
     "inputs": [
@@ -416,25 +405,6 @@ export const remiPayoutsAbi = [
         "internalType": "uint64",
         "name": "lastPaidAt",
         "type": "uint64"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "payer",
-        "type": "address"
-      }
-    ],
-    "name": "labelsOf",
-    "outputs": [
-      {
-        "internalType": "string[]",
-        "name": "",
-        "type": "string[]"
       }
     ],
     "stateMutability": "view",
@@ -506,40 +476,6 @@ export const remiPayoutsAbi = [
   {
     "inputs": [
       {
-        "internalType": "string",
-        "name": "label",
-        "type": "string"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "string",
-        "name": "memo",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "category",
-        "type": "string"
-      }
-    ],
-    "name": "pay",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "receiptNo",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "address",
         "name": "payee",
         "type": "address"
@@ -548,21 +484,6 @@ export const remiPayoutsAbi = [
         "internalType": "uint256",
         "name": "amount",
         "type": "uint256"
-      },
-      {
-        "internalType": "string",
-        "name": "label",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "memo",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "category",
-        "type": "string"
       }
     ],
     "name": "payTo",
@@ -574,40 +495,6 @@ export const remiPayoutsAbi = [
       }
     ],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "payer",
-        "type": "address"
-      },
-      {
-        "internalType": "string",
-        "name": "label",
-        "type": "string"
-      }
-    ],
-    "name": "payeeOf",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "wallet",
-        "type": "address"
-      },
-      {
-        "internalType": "string",
-        "name": "country",
-        "type": "string"
-      },
-      {
-        "internalType": "bool",
-        "name": "exists",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -626,22 +513,17 @@ export const remiPayoutsAbi = [
   {
     "inputs": [
       {
-        "internalType": "string",
-        "name": "label",
-        "type": "string"
-      },
-      {
         "internalType": "address",
-        "name": "wallet",
+        "name": "payer",
         "type": "address"
       },
       {
-        "internalType": "string",
-        "name": "country",
-        "type": "string"
+        "internalType": "bool",
+        "name": "trusted",
+        "type": "bool"
       }
     ],
-    "name": "savePayee",
+    "name": "setTrustedPayer",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -654,6 +536,25 @@ export const remiPayoutsAbi = [
         "internalType": "contract IERC20",
         "name": "",
         "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "trustedPayers",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
       }
     ],
     "stateMutability": "view",

@@ -65,6 +65,7 @@ export function PassportScreen({
   };
 
   const isOwn = account !== null && account.address.toLowerCase() === address.toLowerCase();
+  const isProductionCredential = config?.network === "mainnet";
   const peak =
     assessment === null
       ? 0n
@@ -102,9 +103,16 @@ export function PassportScreen({
             </div>
           ) : (
             <>
+              <div className="notice notice-accent">
+                {isProductionCredential
+                  ? "This Passport includes settlements only from administrator-attested payers. Transfers from other wallets still settle, but cannot be used to create an income credential."
+                  : "This is a test record. Testnet and local payments, including DemoUSD, cannot be used for underwriting."}
+              </div>
               <div className="panel stack">
                 <div className="spread">
-                  <span className="eyebrow">Verified earnings</span>
+                  <span className="eyebrow">
+                    {isProductionCredential ? "Verified earnings" : "Testnet activity"}
+                  </span>
                   <span className="chip chip-accent">
                     {assessment.payoutCount} {assessment.payoutCount === 1 ? "record" : "records"}
                   </span>
@@ -158,7 +166,7 @@ export function PassportScreen({
                 )}
               </div>
 
-              <section className="card stack-sm">
+              {isProductionCredential && <section className="card stack-sm">
                 <span className="eyebrow">Income stability</span>
                 <div className="score">
                   <b>{assessment.stabilityScore}</b>
@@ -166,7 +174,7 @@ export function PassportScreen({
                 </div>
                 <p className="small hushed">
                   Steadiness of this income, not its size. Computed from settled payouts —
-                  regularity, how many clients, how much of the period was covered, and how long
+                  regularity, attested clients, how much of the period was covered, and how long
                   the record runs.
                 </p>
                 <ul className="small hushed" style={{ margin: 0, paddingLeft: "1.1rem" }}>
@@ -183,7 +191,7 @@ export function PassportScreen({
                     someone who does.
                   </div>
                 )}
-              </section>
+              </section>}
 
               {assessment.byClient.length > 0 && (
                 <section className="stack-sm">

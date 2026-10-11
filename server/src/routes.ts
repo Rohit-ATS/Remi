@@ -10,9 +10,20 @@ import { buildBooks, toCsv, CATEGORIES } from "./books.ts";
 import { buildDashboard } from "./dashboard.ts";
 import { assess } from "./underwriting.ts";
 import { answer } from "./assistant.ts";
+import { AssistantGuard } from "./assistant-guard.ts";
 import { fund } from "./faucet.ts";
 
 const ADDRESS = /^0x[0-9a-fA-F]{40}$/;
+const MAX_PAYOUTS = 500;
+
+/** Parses the public pagination parameter without SQLite's negative-LIMIT semantics. */
+export function parsePayoutLimit(value: string | undefined): number | null {
+  if (value === undefined || value === "") return 100;
+  if (!/^\d+$/.test(value)) return null;
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed < 1) return null;
+  return Math.min(parsed, MAX_PAYOUTS);
+}
 
 export function registerRoutes(
   app: FastifyInstance,
@@ -20,12 +31,7 @@ export function registerRoutes(
   store: Store,
   indexer: Indexer,
 ): void {
-  const countryOf = (payee: string): string => {
-    const row = store.db
-      .prepare("SELECT country FROM payees WHERE wallet = ? AND country <> '' LIMIT 1")
-      .get(payee.toLowerCase()) as { country: string } | undefined;
-    return row?.country ?? "";
-  };
+  const assistantGuard = new AssistantGuard(config.assistant);
 
   app.get("/api/health", async () => ({
     ok: true,
@@ -35,7 +41,7 @@ export function registerRoutes(
     tokenAddress: config.tokenAddress,
     explorer: config.chain.blockExplorers?.default.url ?? null,
     categories: CATEGORIES,
-    assistant: config.kimi.apiKey === null ? "local" : "kimi",
+    assistant: config.kimi.apiKey === null || !config.kimi.enabled ? "local" : "kimi",
     counts: store.counts(),
     indexer: indexer.getStatus(),
   }));
@@ -85,7 +91,10 @@ export function registerRoutes(
     if (!owner || !ADDRESS.test(owner)) {
       return reply.code(400).send({ error: "owner must be a 20-byte hex address" });
     }
-    const limit = Math.min(Number(req.query.limit ?? 100) || 100, 500);
+    const limit = parsePayoutLimit(req.query.limit);
+    if (limit === null) {
+      return reply.code(400).send({ error: "limit must be a positive integer" });
+    }
     return { payouts: store.payoutsByPayer(owner, limit) };
   });
 
@@ -96,16 +105,7 @@ export function registerRoutes(
       return reply.code(400).send({ error: "owner must be a 20-byte hex address" });
     }
     const payouts = store.payoutsByPayer(owner, 500);
-    const payees = store.payeesByPayer(owner);
-    return buildDashboard(payouts, payees.length);
-  });
-
-  app.get<{ Querystring: { owner?: string } }>("/api/payees", async (req, reply) => {
-    const owner = req.query.owner;
-    if (!owner || !ADDRESS.test(owner)) {
-      return reply.code(400).send({ error: "owner must be a 20-byte hex address" });
-    }
-    return { payees: store.payeesByPayer(owner) };
+    return buildDashboard(payouts, new Set(payouts.map((payout) => payout.payee)).size);
   });
 
   app.get<{ Querystring: { owner?: string; month?: string } }>("/api/books", async (req, reply) => {
@@ -156,10 +156,20 @@ export function registerRoutes(
     if (!ADDRESS.test(address)) {
       return reply.code(400).send({ error: "address must be a 20-byte hex address" });
     }
-    const rows = store.payoutsByPayee(address, 500);
+    const rows = store.payoutsByPayee(address, 500).filter((row) => row.passport_eligible);
+    const assessment = assess(rows);
+    if (config.network !== "mainnet") {
+      // DemoUSD is freely mintable. Testnet and local histories can demonstrate
+      // the product flow, but must never present a credit-facing score.
+      assessment.stabilityScore = 0;
+      assessment.advanceCeiling = "0";
+      assessment.reasons.unshift(
+        "Testnet and local records are demonstrations only and cannot support underwriting.",
+      );
+    }
     return {
       address: address.toLowerCase(),
-      assessment: assess(rows),
+      assessment,
       payouts: rows,
     };
   });
@@ -177,7 +187,17 @@ export function registerRoutes(
     if (question.length > 500) {
       return reply.code(400).send({ error: "question must be 500 characters or fewer" });
     }
-    const rows = store.payoutsByPayer(owner, 500);
-    return answer(question.trim(), rows, countryOf, config);
+    // `owner` is public, caller-controlled input, not authentication. It must
+    // not form part of the rate-limit identity or callers can rotate wallets.
+    const release = assistantGuard.acquire(req.ip);
+    if (release === null) {
+      return reply.code(429).send({ error: "assistant is busy; try again shortly" });
+    }
+    try {
+      const rows = store.payoutsByPayer(owner, 500);
+      return await answer(question.trim(), rows, config);
+    } finally {
+      release();
+    }
   });
 }

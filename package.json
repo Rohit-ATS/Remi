@@ -10,7 +10,7 @@
     "server"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "scripts": {
     "compile": "node scripts/compile.mjs",

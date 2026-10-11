@@ -1,4 +1,4 @@
-// Chain watcher. Polls PaymentSent and PayeeSaved into SQLite.
+// Chain watcher. Polls privacy-preserving PaymentSent receipts into SQLite.
 //
 // Why an index at all: the two features that make Remi a network cannot read
 // from the payer's device. A recipient opening /r/:receiptNo has no account and
@@ -13,10 +13,7 @@ import type { Store } from "./db.ts";
 // `log.args` from the literal type, which a runtime `.find()` cannot provide.
 // They must stay in step with contracts/RemiPayouts.sol.
 const paymentSent = parseAbiItem(
-  "event PaymentSent(uint256 indexed receiptNo, address indexed payer, address indexed payee, uint256 amount, string label, string memo, string category, uint64 timestamp)",
-);
-const payeeSaved = parseAbiItem(
-  "event PayeeSaved(address indexed payer, string label, address indexed wallet, string country)",
+  "event PaymentSent(uint256 indexed receiptNo, address indexed payer, address indexed payee, uint256 amount, bool passportEligible, uint64 timestamp)",
 );
 
 export function makeClient(config: Config): PublicClient {
@@ -70,6 +67,9 @@ export class Indexer {
       this.log("indexer idle: PAYOUTS_ADDRESS is not set");
       return;
     }
+    if (this.store.selectPayoutContract(this.config.payoutsAddress)) {
+      this.log("configured payout contract changed; cleared the local index before reindexing");
+    }
     this.status.running = true;
     const tick = () => {
       void this.runOnce();
@@ -113,21 +113,7 @@ export class Indexer {
   }
 
   private async ingestRange(address: `0x${string}`, fromBlock: bigint, toBlock: bigint): Promise<void> {
-    const [payments, payees] = await Promise.all([
-      this.client.getLogs({ address, event: paymentSent, fromBlock, toBlock }),
-      this.client.getLogs({ address, event: payeeSaved, fromBlock, toBlock }),
-    ]);
-
-    for (const log of payees) {
-      const a = log.args;
-      if (!a.payer || !a.wallet || a.label === undefined) continue;
-      this.store.upsertPayee({
-        payer: a.payer,
-        label: a.label,
-        wallet: a.wallet,
-        country: a.country ?? "",
-      });
-    }
+    const payments = await this.client.getLogs({ address, event: paymentSent, fromBlock, toBlock });
 
     for (const log of payments) {
       const a = log.args;
@@ -137,19 +123,20 @@ export class Indexer {
         payer: a.payer,
         payee: a.payee,
         amount: a.amount.toString(),
-        label: a.label ?? "",
-        memo: a.memo ?? "",
-        category: a.category ?? "Other",
+        // Payer metadata is deliberately not indexed: it never leaves the
+        // encrypted client vault or enters public transaction data.
+        label: "",
+        memo: "",
+        category: "Payout",
+        passport_eligible: a.passportEligible ?? false,
         timestamp: Number(a.timestamp ?? 0n),
         tx_hash: log.transactionHash ?? "",
         block_number: Number(log.blockNumber ?? 0n),
       });
     }
 
-    if (payments.length > 0 || payees.length > 0) {
-      this.log(
-        `indexed ${fromBlock}–${toBlock}: ${payments.length} payouts, ${payees.length} payees`,
-      );
+    if (payments.length > 0) {
+      this.log(`indexed ${fromBlock}–${toBlock}: ${payments.length} payouts`);
     }
   }
 }

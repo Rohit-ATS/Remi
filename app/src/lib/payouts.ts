@@ -13,8 +13,7 @@ import type { ServerConfig } from "./api.ts";
 // Gas limits, tightened against the figures scripts/deploy.mjs prints.
 export const GAS = {
   approve: 60_000n,
-  savePayee: 180_000n,
-  pay: 260_000n,
+  pay: 180_000n,
 } as const;
 
 const MAX_UINT256 = 2n ** 256n - 1n;
@@ -131,30 +130,6 @@ export async function enablePayouts(config: ServerConfig): Promise<`0x${string}`
   });
 }
 
-export async function savePayee(
-  config: ServerConfig,
-  label: string,
-  wallet: Address,
-  country: string,
-): Promise<`0x${string}`> {
-  const { payouts } = requireAddresses(config);
-  const chain = chainFrom(config);
-
-  return withSession(chain, config.rpcUrl, async ({ client }) => {
-    const hash = await client.writeContract({
-      account: client.account!,
-      chain,
-      address: payouts,
-      abi: remiPayoutsAbi,
-      functionName: "savePayee",
-      args: [label, wallet, country],
-      gas: GAS.savePayee,
-    });
-    await publicClientFrom(config).waitForTransactionReceipt({ hash });
-    return hash;
-  });
-}
-
 export type PreflightResult =
   | { ok: true }
   | { ok: false; kind: "needs-approval" }
@@ -195,18 +170,14 @@ export type SentPayout = {
 /**
  * Sends a payout. One Face ID prompt.
  *
- * `pay` is used when the label is already saved on-chain, `payTo` otherwise, so
- * a first-time payee does not need two confirmations.
+ * Payer metadata is kept in the encrypted client-side book. The contract gets
+ * only the recipient and amount, because transaction calldata is public.
  */
 export async function sendPayout(
   config: ServerConfig,
   options: {
-    label: string;
     payeeAddress: Address;
     amount: bigint;
-    memo: string;
-    category: string;
-    labelIsSaved: boolean;
   },
 ): Promise<SentPayout> {
   const { payouts } = requireAddresses(config);
@@ -216,31 +187,15 @@ export async function sendPayout(
   return withSession(chain, config.rpcUrl, async ({ client: wallet }) => {
     const startedAt = Date.now();
 
-    const hash = options.labelIsSaved
-      ? await wallet.writeContract({
-          account: wallet.account!,
-          chain,
-          address: payouts,
-          abi: remiPayoutsAbi,
-          functionName: "pay",
-          args: [options.label, options.amount, options.memo, options.category],
-          gas: GAS.pay,
-        })
-      : await wallet.writeContract({
-          account: wallet.account!,
-          chain,
-          address: payouts,
-          abi: remiPayoutsAbi,
-          functionName: "payTo",
-          args: [
-            options.payeeAddress,
-            options.amount,
-            options.label,
-            options.memo,
-            options.category,
-          ],
-          gas: GAS.pay,
-        });
+    const hash = await wallet.writeContract({
+      account: wallet.account!,
+      chain,
+      address: payouts,
+      abi: remiPayoutsAbi,
+      functionName: "payTo",
+      args: [options.payeeAddress, options.amount],
+      gas: GAS.pay,
+    });
 
     const receipt = await client.waitForTransactionReceipt({ hash });
     const confirmedInMs = Date.now() - startedAt;

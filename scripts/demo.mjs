@@ -157,19 +157,6 @@ await send(
   }),
 );
 
-console.log(`saving payees…`);
-for (const payee of PAYEES) {
-  await send(
-    wallet.writeContract({
-      address: PAYOUTS_ADDRESS,
-      abi: payoutsAbi,
-      functionName: "savePayee",
-      args: [payee.label, payee.address, payee.country],
-      gas: 180_000n,
-    }),
-  );
-}
-
 const byLabel = Object.fromEntries(PAYEES.map((p) => [p.label, p]));
 let count = 0;
 
@@ -180,9 +167,9 @@ for (const [label, amount, category, memo, months] of SCHEDULE) {
     wallet.writeContract({
       address: PAYOUTS_ADDRESS,
       abi: payoutsAbi,
-      functionName: "pay",
-      args: [label, usd(amount), memo, category],
-      gas: 260_000n,
+      functionName: "payTo",
+      args: [byLabel[label].address, usd(amount)],
+      gas: 180_000n,
     }),
   );
   count += 1;
@@ -196,8 +183,8 @@ for (const [label, amount, category, memo, months, address] of OVERHEAD) {
       address: PAYOUTS_ADDRESS,
       abi: payoutsAbi,
       functionName: "payTo",
-      args: [address, usd(amount), label, memo, category],
-      gas: 260_000n,
+      args: [address, usd(amount)],
+      gas: 180_000n,
     }),
   );
   count += 1;

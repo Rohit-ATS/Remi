@@ -160,7 +160,12 @@ if (network === "mainnet") {
   console.log(`  minted   50,000 dUSD to the deployer`);
 }
 
-const payouts = await deploy("RemiPayouts", [tokenAddress], GAS.deployPayouts);
+const admin = process.env.PAYOUTS_ADMIN ?? account.address;
+if (!/^0x[0-9a-fA-F]{40}$/.test(admin)) {
+  console.error("PAYOUTS_ADMIN must be a 20-byte hex address when set.");
+  process.exit(1);
+}
+const payouts = await deploy("RemiPayouts", [tokenAddress, admin], GAS.deployPayouts);
 
 // A local chain has no explorer, so there is nothing to link to.
 const explorer = chain.blockExplorers?.default.url ?? null;
@@ -173,6 +178,7 @@ const updates = {
   PAYOUTS_ADDRESS: payouts.address,
   TOKEN_ADDRESS: tokenAddress,
   START_BLOCK: payouts.blockNumber.toString(),
+  PAYOUTS_ADMIN: admin,
 };
 
 let next = existing;
