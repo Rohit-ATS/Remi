@@ -1,12 +1,20 @@
 // Due dates for the payments a business has to make anyway: a monthly
 // retainer, a subscription, a quarterly invoice.
 //
-// A reminder is a note, not an instruction. Nothing here sends money or can be
-// made to — when a due date arrives the calendar offers a prefilled link to
-// the composer, and the confirm sheet still stands between that and a payout.
-// An app that could pay on a schedule by itself would need a key that signs
-// without the person present, which is the one thing this product refuses to
-// hold.
+// A reminder is a note, not an instruction. Nothing here sends money on its
+// own and nothing here can be made to: an app that paid on a schedule by
+// itself would need a key that signs without the person present, which is the
+// one thing this product refuses to hold.
+//
+// `autopay` does not change that. It arms a reminder so that paying it, on the
+// day, is one gesture instead of a trip through the composer — the payout
+// still happens because somebody was there and verified it with their face,
+// their fingerprint or their PIN. What is saved is the typing, not the
+// consent. A reminder that is armed and overdue has done nothing; it is simply
+// waiting, and it will wait forever if nobody shows up.
+//
+// Arming requires `payee`, because paying in one gesture means there is no
+// moment left in which to ask who is being paid.
 
 export type Repeat = "none" | "monthly" | "yearly";
 
@@ -20,7 +28,36 @@ export type Reminder = {
   due: string;
   repeat: Repeat;
   note: string;
+  /**
+   * Where the money goes. Optional, because a reminder is useful as a plain
+   * note; required before it can be armed, because one gesture leaves no
+   * moment in which to ask.
+   */
+  payee?: string | null;
+  /**
+   * Armed for one-gesture payment on the day, still behind user verification.
+   * Absent on everything written before this existed, which reads as off.
+   */
+  autopay?: boolean;
 };
+
+/** Whether a reminder could be paid in one gesture: a payee and a fixed sum. */
+export function canArm(reminder: Reminder): boolean {
+  return (
+    typeof reminder.payee === "string" &&
+    /^0x[0-9a-fA-F]{40}$/.test(reminder.payee) &&
+    reminder.amount !== null
+  );
+}
+
+/** Armed, and the day has arrived or gone by. Nothing happens until asked. */
+export function isPayable(occurrence: Occurrence, today = new Date()): boolean {
+  return (
+    occurrence.reminder.autopay === true &&
+    canArm(occurrence.reminder) &&
+    daysUntil(occurrence.date, today) <= 0
+  );
+}
 
 export type Occurrence = { reminder: Reminder; date: Date };
 
