@@ -132,12 +132,33 @@ export async function demoPrfOutput(salt?: Uint8Array): Promise<Uint8Array<Array
   return new Uint8Array(await crypto.subtle.digest("SHA-256", input));
 }
 
-/** Signs in without a passkey, for devices and demos that cannot run one. */
-export function createDemoAccount(label: string): StoredAccount {
-  let key = readDemoKey();
-  if (key === null) {
-    key = new Uint8Array(new ArrayBuffer(32));
-    crypto.getRandomValues(key);
+/**
+ * Hardhat's first account, which is also what `npm run deploy` and
+ * `npm run demo` use on a local chain. It is printed by every Ethereum
+ * development tool there is, worthless anywhere but a local chain, and
+ * offered here only when the server says it is pointed at one.
+ *
+ * Seeding the demo account with it is what makes `npm run demo` visible: the
+ * history that script writes belongs to this address, and without this there
+ * is no way to sign in as the account that owns it.
+ */
+export const LOCAL_CHAIN_KEY = "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+
+/**
+ * Signs in without a passkey, for devices and demos that cannot run one.
+ *
+ * `seed` fixes which account that is. Given one, it replaces whatever was
+ * stored, because the caller is asking for a particular address rather than
+ * for any account at all.
+ */
+export function createDemoAccount(label: string, seed?: string): StoredAccount {
+  const seeded = seed !== undefined && /^[0-9a-f]{64}$/.test(seed);
+  let key = seeded ? fromHex(seed) : readDemoKey();
+  if (key === null || seeded) {
+    if (key === null) {
+      key = new Uint8Array(new ArrayBuffer(32));
+      crypto.getRandomValues(key);
+    }
     try {
       localStorage.setItem(DEMO_KEY_STORAGE, toHex(key));
     } catch {
