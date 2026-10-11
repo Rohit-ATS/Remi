@@ -123,6 +123,12 @@ export function DueDates({
         reminders={reminders}
         onPay={onPay}
         onRemove={(id) => void persist(reminders.filter((r) => r.id !== id))}
+        onAdd={(dateKey) => {
+          // Opening the form from a day should not make the person type that
+          // day back in, so the date it was opened from is already filled.
+          setDue(dateKey);
+          setAdding(true);
+        }}
       />
 
       {adding ? (
