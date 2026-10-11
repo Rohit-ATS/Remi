@@ -14,6 +14,7 @@
 import { useEffect, useState } from "react";
 
 export type Route =
+  | { name: "docs"; section: string }
   | { name: "landing"; anchor: string | null }
   | { name: "signin"; mode: "create" | "signin"; email: string | null; next: string }
   | { name: "home" }
@@ -45,6 +46,7 @@ export function parseRoute(hash: string): Route {
   const [head, tail] = (pathPart ?? "").split("/");
 
   if (head === "app") return { name: "home" };
+  if (head === "docs") return { name: "docs", section: tail || "overview" };
   if (head === "pay") {
     return {
       name: "pay",
@@ -116,7 +118,7 @@ export function signInHref(
  * what we want, so it is left alone.
  */
 export function useScrollReset(route: Route): void {
-  const key = route.name === "landing" ? `landing:${route.anchor ?? ""}` : route.name;
+  const key = route.name === "landing" ? `landing:${route.anchor ?? ""}` : route.name === "docs" ? `docs:${route.section}` : route.name;
 
   useEffect(() => {
     if (route.name === "landing" && route.anchor !== null) {

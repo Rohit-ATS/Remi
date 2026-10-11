@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { parseRoute, signInHref, GATED } from "./router.ts";
 
 describe("parseRoute", () => {
+  it("opens documentation and chapter links without an account", () => {
+    expect(parseRoute("#/docs")).toEqual({ name: "docs", section: "overview" });
+    expect(parseRoute("#/docs/privacy")).toEqual({ name: "docs", section: "privacy" });
+    expect(GATED.has("docs")).toBe(false);
+  });
   it("parses landing page without anchor", () => {
     expect(parseRoute("")).toEqual({ name: "landing", anchor: null });
     expect(parseRoute("#")).toEqual({ name: "landing", anchor: null });

@@ -27,7 +27,8 @@ export const NAV: NavItem[] = [
   },
   { label: "Privacy", href: "#privacy" },
   { label: "Why Monad", href: "#why" },
-  { label: "Docs", href: "https://github.com/Rohit-ATS/Remi" },
+  { label: "Docs", href: "#/docs" },
+  { label: "GitHub ↗", href: "https://github.com/Rohit-ATS/Remi" },
 ];
 
 /** The agents ticker. Figures are illustrative of the unit economics, not usage claims. */
@@ -110,7 +111,7 @@ export const FOOTER: { heading: string; links: { label: string; href: string }[]
     heading: "Project",
     links: [
       { label: "Source", href: "https://github.com/Rohit-ATS/Remi" },
-      { label: "README", href: "https://github.com/Rohit-ATS/Remi#readme" },
+      { label: "Documentation", href: "#/docs" },
       { label: "Strategy", href: "https://github.com/Rohit-ATS/Remi/blob/main/docs/STRATEGY.md" },
     ],
   },

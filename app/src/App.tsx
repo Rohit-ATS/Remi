@@ -5,6 +5,7 @@ import { GATED, navigate, signInHref, useRoute, useScrollReset, type Route } fro
 import { AppHeader } from "./components/AppHeader.tsx";
 import { SideNav, TabBar } from "./components/Nav.tsx";
 import { Landing } from "./screens/Landing.tsx";
+import { Docs } from "./screens/Docs.tsx";
 import { SignIn } from "./screens/SignIn.tsx";
 import { DashboardScreen } from "./screens/Dashboard.tsx";
 import { PayScreen } from "./screens/Pay.tsx";
@@ -79,6 +80,7 @@ export function App() {
   if (route.name === "landing") {
     return <Landing account={account} />;
   }
+  if (route.name === "docs") return <Docs section={route.section} />;
 
   if (redirect !== null) {
     return <Loading config={config} account={account} />;

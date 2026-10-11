@@ -1,0 +1,77 @@
+.docs { min-height: 100vh; background: var(--paper); }
+.docs-header { height: 80px; padding: 0 40px; border-bottom: 1px solid var(--rule); display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.docs-brand, .docs-header-actions { display: flex; align-items: center; gap: 24px; }
+.docs-brand > a:last-child { color: var(--hushed); font-size: 14px; }
+.docs-brand-divider { width: 1px; height: 22px; background: var(--rule); transform: rotate(20deg); }
+.docs-repo { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.docs-layout { max-width: 1480px; margin: auto; display: grid; grid-template-columns: 242px minmax(0, 1fr) 220px; }
+.docs-sidebar { padding: 42px 24px 40px 32px; border-right: 1px solid var(--rule); position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto; }
+.docs-sidebar-caption, .docs-eyebrow, .docs-nav-group, .docs-next small { font-family: var(--mono); font-size: 10px; letter-spacing: .09em; font-weight: 500; }
+.docs-sidebar-caption { color: var(--faint); }
+.docs-nav-group { color: var(--hushed); margin: 28px 10px 10px; }
+.docs-sidebar nav a { display: block; font-size: 13px; padding: 9px 12px; border-radius: 6px; margin: 2px 0; color: var(--hushed); }
+.docs-sidebar nav a:hover { color: var(--ink); background: var(--panel); }
+.docs-sidebar nav a[aria-current="page"] { color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+.docs-source { display: flex; gap: 8px; align-items: center; border-top: 1px solid var(--rule); margin-top: 36px; padding: 22px 10px; color: var(--hushed); font-size: 12px; }
+.docs-article { padding: 42px clamp(24px, 5vw, 76px) 64px; min-width: 0; }
+.docs-breadcrumb { font-size: 12px; color: var(--hushed); margin-bottom: 55px; }
+.docs-breadcrumb span { padding: 0 10px; color: var(--faint); }
+.docs-title { padding-bottom: 34px; border-bottom: 1px solid var(--rule); margin-bottom: 32px; }
+.docs-eyebrow { color: var(--accent); text-transform: uppercase; }
+.docs-title h1 { font-size: clamp(34px, 3.5vw, 52px); max-width: 620px; line-height: 1.08; letter-spacing: -.045em; margin: 18px 0; }
+.docs-title p { font-size: 17px; line-height: 1.75; color: var(--hushed); max-width: 590px; }
+.docs-section { margin: 32px 0; }
+.docs-section h2 { font-size: 23px; margin-bottom: 14px; }
+.docs-section p, .docs-boundary p { font-size: 14px; line-height: 1.85; color: var(--hushed); }
+.docs-section p + p { margin-top: 14px; }
+.docs-section p a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+.docs-article code { font-family: var(--mono); font-size: .85em; overflow-wrap: anywhere; background: var(--panel); padding: 2px 5px; border-radius: 4px; }
+.docs-note { display: flex; gap: 14px; background: var(--accent-soft); border-left: 2px solid var(--accent); padding: 18px 20px; font-size: 13px; line-height: 1.8; margin: 26px 0; border-radius: 0 6px 6px 0; }
+.docs-note > span { color: var(--accent); font-size: 20px; }
+.docs-intro-label { font-family: var(--mono); font-size: 10px; letter-spacing: .08em; color: var(--hushed); display: flex; align-items: center; gap: 9px; }
+.docs-intro-label > span { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; }
+.docs-cards, .docs-boundary { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 28px 0; }
+.docs-cards > a, .docs-boundary > div { border: 1px solid var(--rule); padding: 22px; border-radius: 8px; }
+.docs-cards > a:hover { border-color: var(--accent); background: var(--canvas); }
+.docs-cards h3, .docs-boundary h3 { font-size: 17px; margin: 18px 0 10px; }
+.docs-cards h3 svg { vertical-align: middle; margin-left: 4px; }
+.docs-cards p { color: var(--hushed); font-size: 13px; line-height: 1.7; }
+.docs-code { background: var(--canvas); border: 1px solid var(--rule); padding: 22px; border-radius: 8px; overflow-x: auto; margin: 20px 0; line-height: 1.9; font-size: 13px; }
+.docs-code code { background: none; padding: 0; overflow-wrap: normal; font-size: inherit; }
+.docs-steps { padding-left: 24px; }
+.docs-steps li { padding: 0 0 24px 12px; }
+.docs-steps li::marker { color: var(--accent); font-family: var(--mono); font-size: 13px; }
+.docs-steps strong { font-size: 15px; }
+.docs-steps p { margin-top: 6px; }
+.docs-flow { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--rule); border-radius: 8px; margin: 22px 0; }
+.docs-flow > span { padding: 20px 14px; font-size: 14px; }
+.docs-flow > span + span { border-left: 1px solid var(--rule); }
+.docs-flow small { display: block; color: var(--hushed); font-size: 11px; margin-top: 6px; }
+.docs-bottom { border-top: 1px solid var(--rule); padding-top: 25px; margin-top: 42px; display: flex; justify-content: space-between; gap: 24px; align-items: center; }
+.docs-bottom > a:first-child { color: var(--hushed); font-size: 11px; }
+.docs-next { text-align: right; }
+.docs-next small { display: block; color: var(--faint); margin-bottom: 7px; }
+.docs-next > span { font-size: 14px; }
+.docs-margin { padding: 110px 28px 30px 0; position: sticky; top: 0; align-self: start; }
+.docs-margin p { font-size: 12px; color: var(--hushed); line-height: 1.8; margin: 14px 0; }
+.docs-margin a { font-size: 12px; }
+.docs-margin-rule { height: 1px; background: var(--rule); margin: 28px 0; }
+.docs-skip { position: fixed; top: -80px; left: 20px; z-index: 100; padding: 12px; background: var(--paper); }
+.docs-skip:focus { top: 12px; }
+@media (max-width: 1150px) { .docs-layout { grid-template-columns: 220px minmax(0, 1fr); } .docs-margin { display: none; } }
+@media (max-width: 700px) {
+  .docs-header { height: 68px; padding: 0 20px; }
+  .docs-brand, .docs-header-actions { gap: 12px; }
+  .docs-header-actions .btn { display: none; }
+  .docs-layout { display: block; }
+  .docs-sidebar { height: auto; position: static; border-right: 0; border-bottom: 1px solid var(--rule); padding: 16px 20px; }
+  .docs-sidebar-caption, .docs-nav-group, .docs-source { display: none; }
+  .docs-sidebar nav { display: flex; overflow-x: auto; gap: 4px; }
+  .docs-sidebar nav a { white-space: nowrap; }
+  .docs-article { padding: 26px 22px 40px; }
+  .docs-breadcrumb { margin-bottom: 32px; }
+  .docs-cards, .docs-boundary { grid-template-columns: 1fr; }
+  .docs-title p { font-size: 15px; }
+  .docs-flow { grid-template-columns: 1fr; }
+  .docs-flow > span + span { border-left: 0; border-top: 1px solid var(--rule); }
+}
