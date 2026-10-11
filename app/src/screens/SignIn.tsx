@@ -9,6 +9,7 @@ import {
 } from "../lib/account.ts";
 import type { ServerConfig } from "../lib/api.ts";
 import { navigate, routeHref, signInHref } from "../lib/router.ts";
+import { unlockName } from "../lib/unlock.ts";
 import { AppHeader } from "../components/AppHeader.tsx";
 import { Check } from "../site/primitives.tsx";
 
@@ -68,6 +69,9 @@ export function SignIn({
 
   const creating = mode === "create";
   const local = config?.network === "local";
+  // Whatever this device calls its unlock. A fingerprint reader runs the same
+  // ceremony a face does, and the button should not imply otherwise.
+  const unlock = unlockName();
 
   return (
     <main className="shell">
@@ -109,9 +113,9 @@ export function SignIn({
             {busy === (creating ? "create" : "signin") ? (
               <span className="spinner" />
             ) : creating ? (
-              "Set up with Face ID"
+              `Set up with ${unlock}`
             ) : (
-              "Continue with Face ID"
+              `Continue with ${unlock}`
             )}
           </button>
 
@@ -123,11 +127,11 @@ export function SignIn({
           </a>
         </div>
 
-        {/* The way in when Face ID is not on offer: a machine without a
-            platform authenticator, a browser whose password manager has no PRF
-            extension, or a demo on a borrowed laptop. It is a real account on
-            the same chain — only its key sits in this browser rather than
-            behind a face, which is why it says so plainly. */}
+        {/* The way in when no passkey is on offer at all: a machine without
+            a platform authenticator, a browser whose password manager has no
+            PRF extension, or a demo on a borrowed laptop. It is a real account
+            on the same chain — only its key sits in this browser rather than
+            behind a biometric, which is why it says so plainly. */}
         <div className="card stack-sm">
           <button
             type="button"
@@ -135,7 +139,7 @@ export function SignIn({
             onClick={() => void run("demo")}
             disabled={busy !== null}
           >
-            {busy === "demo" ? <span className="spinner" /> : "Skip Face ID — open a demo account"}
+            {busy === "demo" ? <span className="spinner" /> : "Open a demo account instead"}
           </button>
           <p className="small faint" style={{ margin: 0 }}>
             {local
@@ -151,7 +155,7 @@ export function SignIn({
             <Check /> No seed phrase, no extension, no custody account
           </li>
           <li>
-            <Check /> Both of your keys come back from the same Face ID on a new phone
+            <Check /> Both of your keys come back from the same passkey on a new device
           </li>
           <li>
             <Check /> Remi never holds a key and never takes custody of funds
