@@ -133,6 +133,73 @@ export function useRoute(): Route {
   return route;
 }
 
+/**
+ * Turns in-app links into route changes instead of document loads.
+ *
+ * Every link in the product is a plain `<a href>`, which is the right markup:
+ * it opens in a new tab, it can be copied, it works before the bundle has
+ * run. What it should not do is make the browser throw the application away
+ * and rebuild it — moving from Home to Books was costing a full document
+ * load, a bundle re-parse and a refetch of config that had not changed, which
+ * is the pause between sections.
+ *
+ * One delegated listener, so no link has to opt in and none can be forgotten.
+ * Anything that is not plainly an in-app navigation is left to the browser:
+ * another origin, a download, a new tab, a modified click, a path this router
+ * does not recognise.
+ */
+export function useLinkNavigation(): void {
+  useEffect(() => {
+    const onClick = (event: MouseEvent): void => {
+      // A modified click is a request for a tab, a window or a saved file.
+      if (event.defaultPrevented || event.button !== 0) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+      const target = event.target;
+      const anchor = target instanceof Element ? target.closest("a") : null;
+      if (anchor === null) return;
+      if (anchor.target !== "" && anchor.target !== "_self") return;
+      if (anchor.hasAttribute("download")) return;
+      if (anchor.getAttribute("rel")?.includes("external") === true) return;
+      if (anchor.getAttribute("href")?.startsWith("mailto:") === true) return;
+
+      const url = new URL(anchor.href, location.href);
+      if (url.origin !== location.origin) return;
+
+      const base = basePath();
+      const inBase = url.pathname === base.slice(0, -1) || url.pathname.startsWith(base);
+      if (base !== "/" && !inBase) return;
+
+      const path =
+        base !== "/" && url.pathname.startsWith(base)
+          ? `/${url.pathname.slice(base.length)}`
+          : base !== "/"
+            ? "/"
+            : url.pathname || "/";
+      const to = `${path}${url.search}${url.hash}`;
+
+      // A path this router cannot name belongs to the server — the CSV export
+      // under /api is one — so it is left alone rather than turned into a 404
+      // the application draws itself.
+      if (parseRoute(to).name === "not-found") return;
+
+      event.preventDefault();
+
+      // Clicking the section you are already in should not deepen the back
+      // stack. It still scrolls up, which is what the click meant.
+      if (to === `${currentPath()}${location.search}${location.hash}`) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+
+      navigate(to);
+    };
+
+    document.addEventListener("click", onClick);
+    return () => document.removeEventListener("click", onClick);
+  }, []);
+}
+
 export function navigate(to: string): void {
   history.pushState(null, "", routeHref(to));
   window.dispatchEvent(new PopStateEvent("popstate"));
