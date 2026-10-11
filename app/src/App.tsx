@@ -7,6 +7,7 @@ import { SideNav, TabBar } from "./components/Nav.tsx";
 import { Landing } from "./screens/Landing.tsx";
 import { SignIn } from "./screens/SignIn.tsx";
 import { DashboardScreen } from "./screens/Dashboard.tsx";
+import { PayScreen } from "./screens/Pay.tsx";
 import { BooksScreen } from "./screens/Books.tsx";
 import { PassportScreen } from "./screens/Passport.tsx";
 import { ReceiptScreen } from "./screens/Receipt.tsx";
@@ -115,6 +116,16 @@ export function App() {
         {route.name === "home" && (
           <DashboardScreen config={config} account={account} onSignOut={onSignOut} />
         )}
+        {route.name === "pay" && (
+          <PayScreen
+            config={config}
+            account={account}
+            onSignOut={onSignOut}
+            to={route.to}
+            amount={route.amount}
+            memo={route.memo}
+          />
+        )}
         {route.name === "books" && (
           <BooksScreen config={config} account={account} onSignOut={onSignOut} />
         )}
@@ -137,6 +148,8 @@ function pathOf(route: Route): string {
   switch (route.name) {
     case "home":
       return "/app";
+    case "pay":
+      return "/pay";
     case "books":
       return "/books";
     case "passport":

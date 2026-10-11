@@ -3,7 +3,6 @@ import { api, type Dashboard, type ServerConfig } from "../lib/api.ts";
 import type { StoredAccount } from "../lib/account.ts";
 import { getBalance } from "../lib/payouts.ts";
 import { formatAmount, formatMonth, formatUsd } from "../lib/money.ts";
-import { Composer } from "./Composer.tsx";
 import { AppHeader } from "../components/AppHeader.tsx";
 
 /**
@@ -37,9 +36,6 @@ export function DashboardScreen({
   const [balance, setBalance] = useState<bigint | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [funding, setFunding] = useState(false);
-  const [draft, setDraft] = useState<{ text: string; memo: string; nonce: number } | undefined>(
-    undefined,
-  );
 
   const refresh = useCallback(async (): Promise<void> => {
     const [dash, bal] = await Promise.allSettled([
@@ -54,12 +50,6 @@ export function DashboardScreen({
   useEffect(() => {
     void refresh();
   }, [refresh]);
-
-  // The counter, not the text, is what tells the composer a new line arrived —
-  // picking the same payee twice has to fill the box twice.
-  const compose = useCallback((text: string, memo = "") => {
-    setDraft((previous) => ({ text, memo, nonce: (previous?.nonce ?? 0) + 1 }));
-  }, []);
 
   const delta = data === null ? 0n : BigInt(data.monthDelta);
   const peak =
@@ -119,9 +109,9 @@ export function DashboardScreen({
         </div>
 
         <div className="balance__actions">
-          <button type="button" className="btn btn-primary" onClick={() => compose("Pay ")}>
+          <a className="btn btn-primary" href="#/pay">
             Pay someone
-          </button>
+          </a>
           {config.faucet === true && (
             <button
               type="button"
@@ -164,39 +154,37 @@ export function DashboardScreen({
             {payees.length > 0 && (
               <div className="payrow">
                 {last !== null && last.label.trim() !== "" && (
-                  <button
-                    type="button"
+                  <a
                     className="paytile paytile--repeat"
-                    onClick={() =>
-                      compose(
-                        `Pay ${last.label} ${formatAmount(last.amount)}`,
-                        last.memo.trim() || last.category,
-                      )
-                    }
+                    href={payHref({
+                      to: last.label,
+                      amount: formatAmount(last.amount),
+                      memo: last.memo.trim() || last.category,
+                    })}
                   >
                     <span className="paytile__top">Repeat</span>
                     <span className="paytile__name">{last.label}</span>
                     <span className="paytile__sub">{formatUsd(last.amount)}</span>
-                  </button>
+                  </a>
                 )}
                 {payees.map(({ label }) => (
-                  <button
-                    key={label}
-                    type="button"
-                    className="paytile"
-                    onClick={() => compose(`Pay ${label} `)}
-                  >
+                  <a key={label} className="paytile" href={payHref({ to: label })}>
                     <span className="paytile__avatar" aria-hidden="true">
                       {label.slice(0, 1).toUpperCase()}
                     </span>
                     <span className="paytile__name">{label}</span>
                     <span className="paytile__sub">Pay again</span>
-                  </button>
+                  </a>
                 ))}
               </div>
             )}
 
-            <Composer config={config} account={account} draft={draft} onSent={() => void refresh()} />
+            <a className="btn btn-primary btn-block" href="#/pay">
+              Pay someone
+            </a>
+            <p className="small faint">
+              Sending, receiving and the receipts behind them all live on the payments screen.
+            </p>
           </section>
 
         </div>
@@ -310,4 +298,14 @@ function greeting(): string {
   if (hour < 12) return "Good morning";
   if (hour < 18) return "Good afternoon";
   return "Good evening";
+}
+
+/** A link into the payments screen with the composer already started. */
+function payHref(seed: { to: string; amount?: string; memo?: string }): string {
+  const query = new URLSearchParams({ to: seed.to });
+  // Group separators are for reading, not for URLs; the parser is happy either
+  // way, but the link people see and paste should be plain.
+  if (seed.amount !== undefined) query.set("amount", seed.amount.replace(/,/g, ""));
+  if (seed.memo !== undefined && seed.memo !== "") query.set("memo", seed.memo);
+  return `#/pay?${query.toString()}`;
 }

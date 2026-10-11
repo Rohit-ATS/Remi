@@ -17,13 +17,19 @@ export type Route =
   | { name: "landing"; anchor: string | null }
   | { name: "signin"; mode: "create" | "signin"; email: string | null; next: string }
   | { name: "home" }
+  /**
+   * The payment screen. The three optional parts seed the composer, so a
+   * shortcut elsewhere in the app is an ordinary link rather than shared state
+   * — and the resulting URL can be pasted, bookmarked or reloaded.
+   */
+  | { name: "pay"; to: string | null; amount: string | null; memo: string | null }
   | { name: "books" }
   | { name: "passport" }
   | { name: "receipt"; receiptNo: number }
   | { name: "public-passport"; address: string };
 
 /** Routes that require an account. Everything else opens for anyone. */
-export const GATED: ReadonlySet<Route["name"]> = new Set(["home", "books", "passport"]);
+export const GATED: ReadonlySet<Route["name"]> = new Set(["home", "pay", "books", "passport"]);
 
 export function parseRoute(hash: string): Route {
   const raw = hash.startsWith("#") ? hash.slice(1) : hash;
@@ -39,6 +45,14 @@ export function parseRoute(hash: string): Route {
   const [head, tail] = (pathPart ?? "").split("/");
 
   if (head === "app") return { name: "home" };
+  if (head === "pay") {
+    return {
+      name: "pay",
+      to: query.get("to"),
+      amount: query.get("amount"),
+      memo: query.get("memo"),
+    };
+  }
   if (head === "books") return { name: "books" };
   if (head === "passport") return { name: "passport" };
 

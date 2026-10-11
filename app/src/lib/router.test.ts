@@ -16,12 +16,20 @@ describe("parseRoute", () => {
 
   it("parses primary gated routes", () => {
     expect(parseRoute("#/app")).toEqual({ name: "home" });
+    expect(parseRoute("#/pay")).toEqual({ name: "pay", to: null, amount: null, memo: null });
+    expect(parseRoute("#/pay?to=Maria&amount=400&memo=October")).toEqual({
+      name: "pay",
+      to: "Maria",
+      amount: "400",
+      memo: "October",
+    });
     expect(parseRoute("#/books")).toEqual({ name: "books" });
     expect(parseRoute("#/passport")).toEqual({ name: "passport" });
   });
 
   it("identifies gated routes in GATED set", () => {
     expect(GATED.has("home")).toBe(true);
+    expect(GATED.has("pay")).toBe(true);
     expect(GATED.has("books")).toBe(true);
     expect(GATED.has("passport")).toBe(true);
     expect(GATED.has("landing")).toBe(false);

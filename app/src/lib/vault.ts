@@ -35,6 +35,7 @@ type VaultBlob = {
 };
 
 const STORAGE_KEY = "remi.payeebook.v1";
+const REMINDERS_KEY = "remi.reminders.v1";
 
 function toBase64(bytes: Uint8Array): string {
   let binary = "";
@@ -86,9 +87,9 @@ async function deriveKey(account: StoredAccount): Promise<CryptoKey> {
   }
 }
 
-function readBlob(): VaultBlob | null {
+function readBlob(storageKey: string = STORAGE_KEY): VaultBlob | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey);
     if (raw === null) return null;
     const parsed = JSON.parse(raw) as VaultBlob;
     if (parsed?.version !== 1 || typeof parsed.nonce !== "string") return null;
@@ -103,9 +104,9 @@ export function hasPayeeBook(): boolean {
   return readBlob() !== null;
 }
 
-export async function unlockPayeeBook(account: StoredAccount): Promise<PayeeEntry[]> {
-  const blob = readBlob();
-  if (blob === null) return [];
+async function unlockAt<T>(account: StoredAccount, storageKey: string, fallback: T): Promise<T> {
+  const blob = readBlob(storageKey);
+  if (blob === null) return fallback;
 
   const key = await deriveKey(account);
   const plaintext = await crypto.subtle.decrypt(
@@ -113,16 +114,21 @@ export async function unlockPayeeBook(account: StoredAccount): Promise<PayeeEntr
     key,
     fromBase64(blob.ciphertext),
   );
-  return JSON.parse(new TextDecoder().decode(plaintext)) as PayeeEntry[];
+  return JSON.parse(new TextDecoder().decode(plaintext)) as T;
 }
 
-export async function savePayeeBook(account: StoredAccount, entries: PayeeEntry[]): Promise<void> {
+async function saveAt(
+  account: StoredAccount,
+  storageKey: string,
+  value: unknown,
+  whatFailed: string,
+): Promise<void> {
   const key = await deriveKey(account);
   const nonce = crypto.getRandomValues(new Uint8Array(12));
   const ciphertext = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv: nonce },
     key,
-    new TextEncoder().encode(JSON.stringify(entries)),
+    new TextEncoder().encode(JSON.stringify(value)),
   );
 
   const blob: VaultBlob = {
@@ -131,10 +137,39 @@ export async function savePayeeBook(account: StoredAccount, entries: PayeeEntry[
     ciphertext: toBase64(new Uint8Array(ciphertext)),
   };
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(blob));
+    localStorage.setItem(storageKey, JSON.stringify(blob));
   } catch {
-    throw new Error("This browser would not store the payee book. Check its storage settings.");
+    throw new Error(`This browser would not store ${whatFailed}. Check its storage settings.`);
   }
+}
+
+export async function unlockPayeeBook(account: StoredAccount): Promise<PayeeEntry[]> {
+  return unlockAt<PayeeEntry[]>(account, STORAGE_KEY, []);
+}
+
+export async function savePayeeBook(account: StoredAccount, entries: PayeeEntry[]): Promise<void> {
+  await saveAt(account, STORAGE_KEY, entries, "the payee book");
+}
+
+/**
+ * Payment reminders, under the same key as the payee book.
+ *
+ * A reminder says who is owed what and when, so it carries exactly the thing
+ * this file exists to keep off a server: a name attached to a sum of money.
+ * Storing reminders in the clear beside an encrypted payee book would hand an
+ * observer the mapping anyway, so they go behind the same Face ID.
+ */
+export async function unlockReminders<T>(account: StoredAccount): Promise<T[]> {
+  return unlockAt<T[]>(account, REMINDERS_KEY, []);
+}
+
+export async function saveReminders(account: StoredAccount, reminders: unknown[]): Promise<void> {
+  await saveAt(account, REMINDERS_KEY, reminders, "your reminders");
+}
+
+/** True when there is an encrypted reminder list to open. */
+export function hasReminders(): boolean {
+  return readBlob(REMINDERS_KEY) !== null;
 }
 
 /**

@@ -257,3 +257,10 @@ a:focus-visible {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* A button that sits inside a row of text rather than under it. */
+.btn-sm {
+  min-height: 2rem;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.82rem;
+}
