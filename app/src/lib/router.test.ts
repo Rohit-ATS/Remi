@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseRoute, signInHref, signInPath, GATED } from "./router.ts";
+import { parseRoute, routeHref, signInHref, signInPath, GATED } from "./router.ts";
 
 describe("parseRoute", () => {
   it("opens documentation and chapter links without an account", () => {
@@ -89,5 +89,13 @@ describe("signInHref", () => {
 
   it("keeps a base-free path available for programmatic navigation", () => {
     expect(signInPath({ mode: "signin", next: "/books" })).toBe("/signin?mode=signin&next=%2Fbooks");
+  });
+});
+
+describe("routeHref", () => {
+  it("leaves external links untouched while prefixing internal routes", () => {
+    expect(routeHref("https://github.com/Rohit-ATS/Remi")).toBe("https://github.com/Rohit-ATS/Remi");
+    expect(routeHref("mailto:hello@remi.so")).toBe("mailto:hello@remi.so");
+    expect(routeHref("/docs")).toBe("/docs");
   });
 });

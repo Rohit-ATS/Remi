@@ -29,6 +29,9 @@ function basePath(): string {
 
 /** Makes an in-app URL work both locally and under GitHub Pages' /Remi/ base. */
 export function routeHref(to: string): string {
+  // Content data also feeds the footer, where some entries are external
+  // documentation links. Those must not acquire the Pages project prefix.
+  if (/^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(to)) return to;
   const base = basePath();
   if (to.startsWith("#")) return `${base}${to}`;
   const path = to.startsWith("/") ? to : `/${to}`;
