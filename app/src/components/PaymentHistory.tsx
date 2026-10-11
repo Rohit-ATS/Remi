@@ -1,5 +1,5 @@
 import type { Payout } from "../lib/api.ts";
-import { formatDate, formatUsd } from "../lib/money.ts";
+import { formatDate, formatUsd, shortAddress } from "../lib/money.ts";
 
 /**
  * Payment history, as a table.
@@ -20,15 +20,28 @@ export function PaymentHistory({
   payouts,
   heading = "Payment history",
   description = "Every payout you have sent, with the receipt behind each one.",
+  direction = "sent",
   viewAllUrl,
   csvUrl,
+  emptyNote,
 }: {
   payouts: Payout[];
   heading?: string;
   description?: string;
+  /**
+   * Which side of the payout this table is for. Sent money names the payee,
+   * because that is the person the payer chose. Received money names the
+   * payer — and only ever as an address, since a client's name is encrypted
+   * under a key only the account holder can derive and a Passport is a
+   * document made to be handed to someone else.
+   */
+  direction?: "sent" | "received";
   viewAllUrl?: string | undefined;
   csvUrl?: string | undefined;
+  emptyNote?: string;
 }) {
+  const received = direction === "received";
+
   return (
     <section className="history" aria-label={heading}>
       <div className="history__head">
@@ -45,7 +58,7 @@ export function PaymentHistory({
           <FileIcon />
           <p>No payments yet</p>
           <p className="small faint">
-            Your first payout appears here, and on the recipient&rsquo;s Passport.
+            {emptyNote ?? "Your first payout appears here, and on the recipient\u2019s Passport."}
           </p>
         </div>
       ) : (
@@ -55,9 +68,9 @@ export function PaymentHistory({
               <thead>
                 <tr>
                   <th>Date</th>
-                  <th>Description</th>
+                  <th>{received ? "From" : "Description"}</th>
                   <th className="n">Amount</th>
-                  <th>Status</th>
+                  <th className="history__status">Status</th>
                   <th className="history__action">Receipt</th>
                 </tr>
               </thead>
@@ -71,15 +84,20 @@ export function PaymentHistory({
                       </span>
                     </td>
                     <td>
-                      <span className="history__name">
-                        {payout.label || `${payout.payee.slice(0, 10)}…`}
+                      <span className={received ? "history__name mono" : "history__name"}>
+                        {received
+                          ? shortAddress(payout.payer)
+                          : payout.label || `${payout.payee.slice(0, 10)}…`}
                       </span>
                       <span className="history__memo">
                         {payout.memo.trim() === "" ? payout.category : payout.memo}
                       </span>
+                      {!payout.passport_eligible && (
+                        <span className="history__flag">Off Passport</span>
+                      )}
                     </td>
                     <td className="n figure">{formatUsd(payout.amount)}</td>
-                    <td>
+                    <td className="history__status">
                       <span className="badge badge--good">
                         <CheckIcon />
                         Settled

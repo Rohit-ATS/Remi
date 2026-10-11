@@ -5,7 +5,6 @@ import { getBalance } from "../lib/payouts.ts";
 import { formatAmount, formatMonth, formatUsd } from "../lib/money.ts";
 import { Composer } from "./Composer.tsx";
 import { AppHeader } from "../components/AppHeader.tsx";
-import { PaymentHistory } from "../components/PaymentHistory.tsx";
 
 /**
  * Home.
@@ -200,21 +199,6 @@ export function DashboardScreen({
             <Composer config={config} account={account} draft={draft} onSent={() => void refresh()} />
           </section>
 
-          <section className="block" aria-label="Payment history">
-            {data === null && error === null ? (
-              <p className="hushed">
-                <span className="spinner" /> Loading…
-              </p>
-            ) : (
-              <PaymentHistory
-                payouts={data?.recent ?? []}
-                heading="Payment history"
-                description="Your most recent payouts, each one backed by a receipt the recipient can verify."
-                viewAllUrl={data !== null && data.recent.length > 0 ? "#/books" : undefined}
-                csvUrl={data !== null && data.recent.length > 0 ? api.csvUrl(account.address) : undefined}
-              />
-            )}
-          </section>
         </div>
 
         <aside className="homeside">

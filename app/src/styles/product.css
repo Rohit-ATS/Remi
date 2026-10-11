@@ -1353,7 +1353,14 @@ td.n {
 
 .history {
   display: grid;
+  /* A grid track sizes to its content by default, so the table would widen the
+     whole column past the viewport instead of scrolling inside its card. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
+}
+.history__card,
+.history .scroll {
+  min-width: 0;
 }
 .history__head {
   display: grid;
@@ -1427,6 +1434,30 @@ td.n {
 .history__action {
   text-align: right;
   width: 1%;
+}
+
+/* Only ever shown in place of the status column, on a phone. */
+.history__flag {
+  display: none;
+  margin-top: 0.25rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  color: #a9752a;
+  border: 1px solid color-mix(in srgb, #a9752a 28%, transparent);
+  background: color-mix(in srgb, #a9752a 12%, transparent);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .history__flag {
+    color: #d9a441;
+    border-color: color-mix(in srgb, #d9a441 30%, transparent);
+    background: color-mix(in srgb, #d9a441 14%, transparent);
+  }
+}
+:root[data-theme="dark"] .history__flag {
+  color: #d9a441;
+  border-color: color-mix(in srgb, #d9a441 30%, transparent);
+  background: color-mix(in srgb, #d9a441 14%, transparent);
 }
 
 /* Status. Two colours only, because there are only two things true of a row:
@@ -1524,5 +1555,29 @@ td.n {
   .history__table th,
   .history__table td {
     padding-inline: 0.55rem;
+  }
+  /* Every row settled, so at this width the status column is one repeated
+     word taking space the amount and the receipt need. It goes, and the only
+     marker that varies rides along with the name instead. */
+  .history__table .history__status {
+    display: none;
+  }
+  .history__flag {
+    display: inline-flex;
+  }
+
+  /* The receipt is the row's one action — it stays pinned to the edge rather
+     than sitting off-screen behind a scroll nobody is told about. */
+  .history__table th.history__action,
+  .history__table td.history__action {
+    position: sticky;
+    right: 0;
+    border-left: 1px solid var(--rule);
+  }
+  .history__table td.history__action {
+    background: var(--card);
+  }
+  .history__table tbody tr:hover td.history__action {
+    background: var(--panel);
   }
 }

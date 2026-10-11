@@ -3,6 +3,7 @@ import { api, type Assessment, type Payout, type ServerConfig } from "../lib/api
 import type { StoredAccount } from "../lib/account.ts";
 import { formatDate, formatMonth, formatUsd, shortAddress } from "../lib/money.ts";
 import { AppHeader } from "../components/AppHeader.tsx";
+import { PaymentHistory } from "../components/PaymentHistory.tsx";
 
 /**
  * The Passport: a worker's own income record.
@@ -219,31 +220,17 @@ export function PassportScreen({
                 </section>
               )}
 
-              <section className="stack-sm">
-                <h2>Payouts</h2>
-                <div className="scroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Date</th>
-                        <th>From</th>
-                        <th>For</th>
-                        <th>Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {payouts.map((payout) => (
-                        <tr key={payout.receipt_no}>
-                          <td>{formatDate(payout.timestamp)}</td>
-                          <td className="mono">{shortAddress(payout.payer)}</td>
-                          <td>{payout.memo || payout.category}</td>
-                          <td className="n">{formatUsd(payout.amount)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
+              <PaymentHistory
+                payouts={payouts}
+                direction="received"
+                heading="Payment history"
+                description={
+                  shared
+                    ? "Every payment received at this address, each one backed by a receipt that can be checked against the chain."
+                    : "Everything you have been paid, each one backed by a receipt anyone you show it to can verify."
+                }
+                emptyNote="Payments received at this address appear here."
+              />
 
               {!shared && (
                 <div className="stack-sm">
