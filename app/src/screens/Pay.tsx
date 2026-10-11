@@ -262,11 +262,10 @@ export function PayScreen({
                 <h2>Receive</h2>
               </div>
 
-              <p className="hushed">
-                Money arrives when someone sends it to your address. Hand them this, and the
-                payout lands in your Passport the moment it settles.
-              </p>
-
+              {/* Two things to hand out, and the difference between them is the
+                  only thing worth saying: one takes money in, the other proves
+                  what came in. The paragraph that used to open this panel said
+                  it a third time, before either field had been seen. */}
               <div className="field">
                 <label htmlFor="receive-address">Your address</label>
                 <div className="inputrow">
@@ -279,6 +278,7 @@ export function PayScreen({
                     {copied === "address" ? "Copied" : "Copy"}
                   </button>
                 </div>
+                <p className="field__hint">Give this to whoever is paying you.</p>
               </div>
 
               <div className="field">
@@ -293,16 +293,15 @@ export function PayScreen({
                     {copied === "link" ? "Copied" : "Copy"}
                   </button>
                 </div>
-                <p className="small faint">
-                  A record of what you have been paid, verifiable against the chain. It shows
-                  amounts and dates, never your clients&rsquo; names.
+                <p className="field__hint">
+                  Proof of what you have been paid. Amounts and dates only, never your
+                  clients&rsquo; names.
                 </p>
               </div>
 
               <div className="quickrow">
                 <a className="quick" href={routeHref("/passport")}>
                   <b>My Passport</b>
-                  <span>What I have been paid</span>
                 </a>
                 {config.explorer !== null && (
                   <a
@@ -312,7 +311,6 @@ export function PayScreen({
                     rel="noreferrer"
                   >
                     <b>View on explorer</b>
-                    <span>This address on chain</span>
                   </a>
                 )}
               </div>
