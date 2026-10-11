@@ -31,7 +31,9 @@ export function Welcome({
     <main className="shell">
       <header className="topbar">
         <span className="mark">Remi</span>
-        {config.network === "testnet" && <span className="chip">Testnet</span>}
+        {config.network !== "mainnet" && (
+          <span className="chip">{config.network === "local" ? "Local" : "Testnet"}</span>
+        )}
       </header>
 
       <div className="stack">

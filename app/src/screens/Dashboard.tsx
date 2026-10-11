@@ -25,6 +25,7 @@ export function DashboardScreen({
   const [data, setData] = useState<Dashboard | null>(null);
   const [balance, setBalance] = useState<bigint | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [funding, setFunding] = useState(false);
 
   const refresh = useCallback(async (): Promise<void> => {
     const [dash, bal] = await Promise.allSettled([
@@ -55,7 +56,9 @@ export function DashboardScreen({
         <span className="mark">
           <a href="#/">Remi</a>
         </span>
-        {config.network === "testnet" && <span className="chip">Testnet</span>}
+        {config.network !== "mainnet" && (
+          <span className="chip">{config.network === "local" ? "Local" : "Testnet"}</span>
+        )}
         <button type="button" className="chip" onClick={onSignOut}>
           Sign out
         </button>
@@ -78,6 +81,33 @@ export function DashboardScreen({
         </div>
 
         {error !== null && <div className="notice notice-error">{error}</div>}
+
+        {config.faucet === true && (balance === null || balance === 0n) && (
+          <div className="notice notice-accent">
+            <strong>This is a local chain.</strong> Your passkey account starts empty — add test
+            dollars and gas to try a payout.{" "}
+            <button
+              type="button"
+              className="btn btn-accent"
+              style={{ marginTop: "0.6rem" }}
+              disabled={funding}
+              onClick={() => {
+                setFunding(true);
+                api
+                  .fund(account.address)
+                  .then(() => refresh())
+                  .catch((caught: unknown) =>
+                    setError(
+                      caught instanceof Error ? caught.message : "Could not add test dollars.",
+                    ),
+                  )
+                  .finally(() => setFunding(false));
+              }}
+            >
+              {funding ? <span className="spinner" /> : "Add test dollars"}
+            </button>
+          </div>
+        )}
 
         <Composer config={config} account={account} onSent={() => void refresh()} />
 

@@ -39,7 +39,21 @@ function loadDotEnv(path) {
 }
 loadDotEnv(join(root, ".env"));
 
+
+const localChain = defineChain({
+  id: 31337,
+  name: "Localhost",
+  nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
+  rpcUrls: { default: { http: ["http://127.0.0.1:8545"] } },
+  testnet: true,
+});
+
+// Hardhat's first account. Publicly known by design and worthless outside a
+// local chain, so `npm run chain` needs no key setup at all.
+const LOCAL_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+
 const chains = {
+  local: localChain,
   mainnet: defineChain({
     id: 143,
     name: "Monad",
@@ -67,11 +81,17 @@ if (!recipient || !/^0x[0-9a-fA-F]{40}$/.test(recipient)) {
   process.exit(1);
 }
 
-const network = process.env.NETWORK === "mainnet" ? "mainnet" : "testnet";
+const network =
+  process.env.NETWORK === "mainnet"
+    ? "mainnet"
+    : process.env.NETWORK === "local"
+      ? "local"
+      : "testnet";
 const chain = chains[network];
 const rpcUrl = process.env.RPC_URL ?? chain.rpcUrls.default.http[0];
 
-const { PRIVATE_KEY, PAYOUTS_ADDRESS, TOKEN_ADDRESS } = process.env;
+const { PAYOUTS_ADDRESS, TOKEN_ADDRESS } = process.env;
+const PRIVATE_KEY = network === "local" ? (process.env.PRIVATE_KEY ?? LOCAL_KEY) : process.env.PRIVATE_KEY;
 for (const [name, value] of Object.entries({ PRIVATE_KEY, PAYOUTS_ADDRESS, TOKEN_ADDRESS })) {
   if (!value) {
     console.error(`${name} is not set. Run \`npm run deploy\` first.`);
@@ -197,4 +217,5 @@ console.log(`  lastPaidAt     ${new Date(Number(passport[4]) * 1000).toISOString
 
 console.log(`\ngas        ${receipt.gasUsed} used of ${GAS.payTo} declared`);
 console.log(`settled    ${(elapsedMs / 1000).toFixed(2)}s wall clock, submit to confirmation`);
-console.log(`tx         ${chain.blockExplorers.default.url}/tx/${hash}`);
+const explorerUrl = chain.blockExplorers?.default.url ?? null;
+console.log(explorerUrl === null ? `tx         ${hash}` : `tx         ${explorerUrl}/tx/${hash}`);

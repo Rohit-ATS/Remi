@@ -25,13 +25,21 @@ const erc20Abi = demoUSDAbi;
 export function chainFrom(config: ServerConfig): Chain {
   return defineChain({
     id: config.chainId,
-    name: config.network === "mainnet" ? "Monad" : "Monad Testnet",
-    nativeCurrency: { name: "MON", symbol: "MON", decimals: 18 },
+    name:
+      config.network === "mainnet"
+        ? "Monad"
+        : config.network === "local"
+          ? "Localhost"
+          : "Monad Testnet",
+    nativeCurrency:
+      config.network === "local"
+        ? { name: "ETH", symbol: "ETH", decimals: 18 }
+        : { name: "MON", symbol: "MON", decimals: 18 },
     rpcUrls: { default: { http: [config.rpcUrl] } },
     ...(config.explorer
       ? { blockExplorers: { default: { name: "Explorer", url: config.explorer } } }
       : {}),
-    ...(config.network === "testnet" ? { testnet: true } : {}),
+    ...(config.network === "mainnet" ? {} : { testnet: true }),
   });
 }
 

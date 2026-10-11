@@ -12,7 +12,7 @@
 // which is what makes the *next* `npm run dev` fail. Each target therefore gets
 // its own process group, and we signal the group.
 
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { connect, createServer } from "node:net";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -38,6 +38,14 @@ const targets = [
   },
 ];
 
+// Windows needs different handling at both ends. `npm` there is npm.cmd, and
+// since Node's CVE-2024-27980 fix a .cmd cannot be spawned without a shell —
+// it throws EINVAL. Windows also has no process groups for process.kill(-pid),
+// so the tree is taken down with taskkill instead. Without both, `npm run dev`
+// fails on Windows before either service starts.
+const isWindows = process.platform === "win32";
+const npmCommand = isWindows ? "npm.cmd" : "npm";
+
 const RESET = "\u001b[0m";
 const DIM = "\u001b[2m";
 const RED = "\u001b[31m";
@@ -53,6 +61,11 @@ function shutdown(code) {
   shuttingDown = true;
   for (const child of children) {
     if (child.exitCode !== null || child.pid === undefined) continue;
+    if (isWindows) {
+      // /T takes the whole tree, which is what npm's grandchild needs.
+      spawnSync("taskkill", ["/PID", String(child.pid), "/T", "/F"], { stdio: "ignore" });
+      continue;
+    }
     // Negative pid signals the whole group, so npm's own child goes too.
     try {
       process.kill(-child.pid, "SIGTERM");
@@ -133,9 +146,12 @@ if (busy.length > 0) {
 }
 
 for (const { name, colour } of targets) {
-  const child = spawn("npm", ["run", "dev", "--workspace", name], {
+  const child = spawn(npmCommand, ["run", "dev", "--workspace", name], {
     cwd: root,
-    detached: true,
+    // A process group is what lets us take npm's own child down with it; on
+    // Windows taskkill /T does that job instead.
+    detached: !isWindows,
+    shell: isWindows,
     stdio: ["ignore", "pipe", "pipe"],
   });
 

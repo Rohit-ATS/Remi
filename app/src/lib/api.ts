@@ -1,13 +1,15 @@
 // Client for the Remi server. Same origin, so passkeys stay scoped to one rpId.
 
 export type ServerConfig = {
-  network: "mainnet" | "testnet";
+  network: "mainnet" | "testnet" | "local";
   chainId: number;
   rpcUrl: string;
   payoutsAddress: `0x${string}` | null;
   tokenAddress: `0x${string}` | null;
   explorer: string | null;
   categories: string[];
+  /** True only on a local chain with a funding key, so the app can offer test dollars. */
+  faucet?: boolean;
 };
 
 export type Payout = {
@@ -146,6 +148,13 @@ export const api = {
     request<AssistantAnswer>("/api/assistant", {
       method: "POST",
       body: JSON.stringify({ owner, question }),
+    }),
+
+  /** Local chain only: tops the signed-in account up with gas and test dollars. */
+  fund: (address: string) =>
+    request<{ address: string; minted: string; txs: string[] }>("/api/dev/fund", {
+      method: "POST",
+      body: JSON.stringify({ address }),
     }),
 
   /** Nudges the indexer so a fresh payout shows up without waiting for the poll. */

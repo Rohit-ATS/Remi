@@ -57,7 +57,9 @@ export function BooksScreen({
         <span className="mark">
           <a href="#/">Remi</a>
         </span>
-        {config.network === "testnet" && <span className="chip">Testnet</span>}
+        {config.network !== "mainnet" && (
+          <span className="chip">{config.network === "local" ? "Local" : "Testnet"}</span>
+        )}
       </header>
 
       {error !== null && <div className="notice notice-error">{error}</div>}

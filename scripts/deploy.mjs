@@ -49,11 +49,29 @@ const monadTestnet = defineChain({
   testnet: true,
 });
 
-const network = process.env.NETWORK === "mainnet" ? "mainnet" : "testnet";
-const chain = network === "mainnet" ? monad : monadTestnet;
+
+const localChain = defineChain({
+  id: 31337,
+  name: "Localhost",
+  nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
+  rpcUrls: { default: { http: ["http://127.0.0.1:8545"] } },
+  testnet: true,
+});
+
+// Hardhat's first account. Publicly known by design and worthless outside a
+// local chain, so `npm run chain` needs no key setup at all.
+const LOCAL_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+
+const network =
+  process.env.NETWORK === "mainnet"
+    ? "mainnet"
+    : process.env.NETWORK === "local"
+      ? "local"
+      : "testnet";
+const chain = network === "mainnet" ? monad : network === "local" ? localChain : monadTestnet;
 const rpcUrl = process.env.RPC_URL ?? chain.rpcUrls.default.http[0];
 
-const privateKey = process.env.PRIVATE_KEY;
+const privateKey = network === "local" ? (process.env.PRIVATE_KEY ?? LOCAL_KEY) : process.env.PRIVATE_KEY;
 if (!privateKey) {
   console.error("PRIVATE_KEY is not set. Copy .env.example to .env and add a deploy key.");
   console.error("Use a key that holds nothing but gas.");
@@ -144,8 +162,9 @@ if (network === "mainnet") {
 
 const payouts = await deploy("RemiPayouts", [tokenAddress], GAS.deployPayouts);
 
-const explorer = chain.blockExplorers.default.url;
-console.log(`\nexplorer  ${explorer}/address/${payouts.address}`);
+// A local chain has no explorer, so there is nothing to link to.
+const explorer = chain.blockExplorers?.default.url ?? null;
+if (explorer !== null) console.log(`\nexplorer  ${explorer}/address/${payouts.address}`);
 
 const envPath = join(root, ".env");
 const existing = existsSync(envPath) ? readFileSync(envPath, "utf8") : "";

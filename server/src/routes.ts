@@ -10,6 +10,7 @@ import { buildBooks, toCsv, CATEGORIES } from "./books.ts";
 import { buildDashboard } from "./dashboard.ts";
 import { assess } from "./underwriting.ts";
 import { answer } from "./assistant.ts";
+import { fund } from "./faucet.ts";
 
 const ADDRESS = /^0x[0-9a-fA-F]{40}$/;
 
@@ -48,11 +49,33 @@ export function registerRoutes(
     tokenAddress: config.tokenAddress,
     explorer: config.chain.blockExplorers?.default.url ?? null,
     categories: CATEGORIES,
+    faucet: config.network === "local" && config.devMintKey !== null,
   }));
 
   app.post("/api/reindex", async () => {
     await indexer.runOnce();
     return { ok: true, indexer: indexer.getStatus() };
+  });
+
+  /**
+   * Local-chain faucet. Gated twice: the route refuses off a local chain, and
+   * `fund` checks again before it signs anything.
+   */
+  app.post<{ Body: { address?: string } }>("/api/dev/fund", async (req, reply) => {
+    if (config.network !== "local") {
+      return reply.code(404).send({ error: "not found" });
+    }
+    const address = req.body?.address;
+    if (!address || !ADDRESS.test(address)) {
+      return reply.code(400).send({ error: "address must be a 20-byte hex address" });
+    }
+    try {
+      return await fund(config, address as `0x${string}`);
+    } catch (error) {
+      return reply
+        .code(500)
+        .send({ error: error instanceof Error ? error.message : "could not fund that account" });
+    }
   });
 
   // --- payer side ----------------------------------------------------------

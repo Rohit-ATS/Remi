@@ -20,17 +20,33 @@ export const monadTestnet = defineChain({
   testnet: true,
 });
 
+/**
+ * Hardhat's first account. Publicly known by design and worthless off a local
+ * chain, so `npm run chain` needs no key setup at all.
+ */
+const LOCAL_DEV_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+
+/** The chain `npm run chain` starts. Offline, funded, no faucet. */
+export const localChain = defineChain({
+  id: 31337,
+  name: "Localhost",
+  nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
+  rpcUrls: { default: { http: ["http://127.0.0.1:8545"] } },
+  testnet: true,
+});
+
 export type Config = {
   port: number;
   host: string;
-  network: "mainnet" | "testnet";
-  chain: typeof monadMainnet | typeof monadTestnet;
+  network: "mainnet" | "testnet" | "local";
+  chain: typeof monadMainnet | typeof monadTestnet | typeof localChain;
   rpcUrl: string;
   payoutsAddress: `0x${string}` | null;
   tokenAddress: `0x${string}` | null;
   /** Block the contract was deployed in. Indexing from 0 would scan the whole chain. */
   startBlock: bigint;
   dbPath: string;
+  devMintKey: string | null;
   /** Poll interval for the indexer, in ms. */
   pollMs: number;
   /** Blocks per getLogs request. RPCs cap this; 2000 is widely safe. */
@@ -55,8 +71,10 @@ function int(value: string | undefined, fallback: number): number {
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
-  const network = env.NETWORK === "mainnet" ? "mainnet" : "testnet";
-  const chain = network === "mainnet" ? monadMainnet : monadTestnet;
+  const network =
+    env.NETWORK === "mainnet" ? "mainnet" : env.NETWORK === "local" ? "local" : "testnet";
+  const chain =
+    network === "mainnet" ? monadMainnet : network === "local" ? localChain : monadTestnet;
 
   return {
     port: int(env.PORT, 8787),
@@ -68,8 +86,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     tokenAddress: address(env.TOKEN_ADDRESS),
     startBlock: BigInt(env.START_BLOCK ?? "0"),
     dbPath: env.DB_PATH ?? "remi.db",
-    pollMs: int(env.POLL_MS, 2000),
+    pollMs: int(env.POLL_MS, network === "local" ? 500 : 2000),
     logChunk: BigInt(env.LOG_CHUNK ?? "2000"),
+    /** Dev-only faucet key. Never set outside a local chain. */
+    devMintKey: network === "local" ? (env.PRIVATE_KEY ?? LOCAL_DEV_KEY) : null,
     kimi: {
       apiKey: env.KIMI_API_KEY ?? null,
       baseUrl: env.KIMI_BASE_URL ?? "https://api.moonshot.ai/v1",
