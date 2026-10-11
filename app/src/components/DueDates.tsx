@@ -13,7 +13,7 @@ import { DayPanel, PaymentCalendar, type OpenDay } from "./PaymentCalendar.tsx";
  *
  * They are encrypted under the same key as the payee book, because a reminder
  * is a name attached to a sum of money and that is the one thing this product
- * promises not to leave lying around. That costs one Face ID prompt the first
+ * promises not to leave lying around. That costs one passkey prompt the first
  * time the list is opened in a session, which is why nothing here loads until
  * the person asks for it.
  */
@@ -120,7 +120,7 @@ export function DueDates({
     return (
       <div className="stack-sm">
         <p className="hushed">
-          Your due dates are encrypted under the same Face ID as your payee book.
+          Your due dates are encrypted under the same passkey as your payee book.
         </p>
         <button
           type="button"
