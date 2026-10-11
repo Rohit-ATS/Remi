@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api, type Books, type ServerConfig } from "../lib/api.ts";
 import type { StoredAccount } from "../lib/account.ts";
 import { formatMonth, formatUsd } from "../lib/money.ts";
+import { AppHeader } from "../components/AppHeader.tsx";
 
 /**
  * Books.
@@ -13,9 +14,11 @@ import { formatMonth, formatUsd } from "../lib/money.ts";
 export function BooksScreen({
   config,
   account,
+  onSignOut,
 }: {
   config: ServerConfig;
   account: StoredAccount;
+  onSignOut: () => void;
 }) {
   const [books, setBooks] = useState<Books | null>(null);
   const [month, setMonth] = useState<string | undefined>(undefined);
@@ -53,14 +56,7 @@ export function BooksScreen({
 
   return (
     <main className="shell wide">
-      <header className="topbar">
-        <span className="mark">
-          <a href="#/">Remi</a>
-        </span>
-        {config.network !== "mainnet" && (
-          <span className="chip">{config.network === "local" ? "Local" : "Testnet"}</span>
-        )}
-      </header>
+      <AppHeader config={config} account={account} onSignOut={onSignOut} />
 
       {error !== null && <div className="notice notice-error">{error}</div>}
       {books === null && error === null && (

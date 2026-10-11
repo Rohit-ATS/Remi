@@ -64,14 +64,7 @@ export function ReceiptScreen({
 
   return (
     <main className="shell">
-      <header className="topbar">
-        <span className="mark">
-          <a href="#/">Remi</a>
-        </span>
-        {config !== null && config.network !== "mainnet" && (
-          <span className="chip">{config.network === "local" ? "Local" : "Testnet"}</span>
-        )}
-      </header>
+      <AppHeader config={config} account={account} />
 
       {error !== null && <div className="notice notice-error">{error}</div>}
 

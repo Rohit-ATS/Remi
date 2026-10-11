@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api, type Assessment, type Payout, type ServerConfig } from "../lib/api.ts";
 import type { StoredAccount } from "../lib/account.ts";
 import { formatDate, formatMonth, formatUsd, shortAddress } from "../lib/money.ts";
+import { AppHeader } from "../components/AppHeader.tsx";
 
 /**
  * The Passport: a worker's own income record.
@@ -20,11 +21,14 @@ export function PassportScreen({
   config,
   account,
   shared = false,
+  onSignOut,
 }: {
   address: string;
   config: ServerConfig | null;
   account: StoredAccount | null;
   shared?: boolean;
+  /** Absent on a shared Passport, which has no session to end. */
+  onSignOut?: (() => void) | undefined;
 }) {
   const [assessment, setAssessment] = useState<Assessment | null>(null);
   const [payouts, setPayouts] = useState<Payout[]>([]);
@@ -71,14 +75,7 @@ export function PassportScreen({
 
   return (
     <main className="shell wide">
-      <header className="topbar">
-        <span className="mark">
-          <a href="#/">Remi</a>
-        </span>
-        {config !== null && config.network !== "mainnet" && (
-          <span className="chip">{config.network === "local" ? "Local" : "Testnet"}</span>
-        )}
-      </header>
+      <AppHeader config={config} account={shared ? null : account} onSignOut={onSignOut} />
 
       {error !== null && <div className="notice notice-error">{error}</div>}
       {assessment === null && error === null && (

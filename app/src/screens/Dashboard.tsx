@@ -4,6 +4,7 @@ import type { StoredAccount } from "../lib/account.ts";
 import { getBalance } from "../lib/payouts.ts";
 import { formatAmount, formatDate, formatMonth, formatUsd } from "../lib/money.ts";
 import { Composer } from "./Composer.tsx";
+import { AppHeader } from "../components/AppHeader.tsx";
 
 /**
  * The first screen after sign-in.
@@ -52,17 +53,7 @@ export function DashboardScreen({
 
   return (
     <main className="shell">
-      <header className="topbar">
-        <span className="mark">
-          <a href="#/">Remi</a>
-        </span>
-        {config.network !== "mainnet" && (
-          <span className="chip">{config.network === "local" ? "Local" : "Testnet"}</span>
-        )}
-        <button type="button" className="chip" onClick={onSignOut}>
-          Sign out
-        </button>
-      </header>
+      <AppHeader config={config} account={account} onSignOut={onSignOut} />
 
       <div className="dash">
         <div className="hero-figure">
