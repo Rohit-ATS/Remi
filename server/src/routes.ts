@@ -47,7 +47,12 @@ export function registerRoutes(
   store: Store,
   indexer: Indexer,
 ): void {
-  const assistantGuard = new AssistantGuard(config.assistant);
+  // Public fallback requests and edge-authenticated remote requests must not
+  // compete for the same small instance budget. The edge token is checked
+  // before the latter guard is acquired, so a direct caller cannot starve the
+  // optional paid-assistant path without possessing that operator credential.
+  const remoteAssistantGuard = new AssistantGuard(config.assistant);
+  const fallbackAssistantGuard = new AssistantGuard(config.assistant);
 
   app.get("/api/health", async () => ({
     ok: true,
@@ -198,19 +203,23 @@ export function registerRoutes(
     if (question.length > 500) {
       return reply.code(400).send({ error: "question must be 500 characters or fewer" });
     }
+    const dailyRequestLimit = config.kimi.dailyRequestLimit;
+    const edgeAuthorized =
+      config.kimi.enabled &&
+      dailyRequestLimit !== null &&
+      hasAssistantEdgeToken(req.headers["x-remi-assistant-token"], config.kimi.edgeToken);
     // `owner` is public, caller-controlled input, not authentication. It must
     // not form part of the rate-limit identity or callers can rotate wallets.
-    const release = assistantGuard.acquire(req.ip);
+    const release = (edgeAuthorized ? remoteAssistantGuard : fallbackAssistantGuard).acquire(req.ip);
     if (release === null) {
       return reply.code(429).send({ error: "assistant is busy; try again shortly" });
     }
     try {
       const rows = store.payoutsByPayer(owner, 500);
       const canUseRemote =
-        config.kimi.enabled &&
-        config.kimi.dailyRequestLimit !== null &&
-        hasAssistantEdgeToken(req.headers["x-remi-assistant-token"], config.kimi.edgeToken) &&
-        store.consumeAssistantBudget(new Date().toISOString().slice(0, 10), config.kimi.dailyRequestLimit);
+        edgeAuthorized &&
+        dailyRequestLimit !== null &&
+        store.consumeAssistantBudget(new Date().toISOString().slice(0, 10), dailyRequestLimit);
       // Requests that did not pass the operator edge, or that hit the durable
       // daily cap, retain the useful deterministic local response rather than
       // exposing a paid provider to an unauthenticated browser.

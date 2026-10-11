@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   createAccount,
   createDemoAccount,
+  demoAccountsAllowed,
   describeError,
   signIn,
   type StoredAccount,
@@ -40,6 +41,7 @@ export function SignIn({
   // An email from the hero is a reasonable first guess at the business name,
   // and a filled field is faster to correct than an empty one to complete.
   const [name, setName] = useState(email === null ? "" : businessNameFrom(email));
+  const demoAvailable = demoAccountsAllowed(config?.network);
 
   const run = async (which: "create" | "signin" | "demo"): Promise<void> => {
     setBusy(which);
@@ -50,7 +52,7 @@ export function SignIn({
           ? await createAccount(name.trim() || "My business")
           : which === "signin"
             ? await signIn()
-            : createDemoAccount(name.trim() || "Demo business");
+            : createDemoAccount(name.trim() || "Demo business", config?.network);
       onSignedIn(account);
       navigate(next);
     } catch (caught) {
@@ -121,20 +123,22 @@ export function SignIn({
             extension, or a demo on a borrowed laptop. It is a real account on
             the same chain — only its key sits in this browser rather than
             behind a face, which is why it says so plainly. */}
-        <div className="card stack-sm">
-          <button
-            type="button"
-            className="btn btn-soft btn-block"
-            onClick={() => void run("demo")}
-            disabled={busy !== null}
-          >
-            {busy === "demo" ? <span className="spinner" /> : "Skip Face ID — open a demo account"}
-          </button>
-          <p className="small faint" style={{ margin: 0 }}>
-            No passkey. The key is generated here and kept in this browser, so use it to look
-            around, not to hold real money.
-          </p>
-        </div>
+        {demoAvailable && (
+          <div className="card stack-sm">
+            <button
+              type="button"
+              className="btn btn-soft btn-block"
+              onClick={() => void run("demo")}
+              disabled={busy !== null}
+            >
+              {busy === "demo" ? <span className="spinner" /> : "Skip Face ID — open a demo account"}
+            </button>
+            <p className="small faint" style={{ margin: 0 }}>
+              No passkey. The key is generated here and kept in this browser, so use it to look
+              around, not to hold real money.
+            </p>
+          </div>
+        )}
 
         {error !== null && <div className="notice notice-error">{error}</div>}
 

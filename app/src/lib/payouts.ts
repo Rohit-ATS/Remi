@@ -115,7 +115,7 @@ export async function enablePayouts(config: ServerConfig): Promise<`0x${string}`
   const { token, payouts } = requireAddresses(config);
   const chain = chainFrom(config);
 
-  return withSession(chain, config.rpcUrl, async ({ client }) => {
+  return withSession(chain, config.rpcUrl, config.network, async ({ client }) => {
     const hash = await client.writeContract({
       account: client.account!,
       chain,
@@ -184,7 +184,7 @@ export async function sendPayout(
   const chain = chainFrom(config);
   const client = publicClientFrom(config);
 
-  return withSession(chain, config.rpcUrl, async ({ client: wallet }) => {
+  return withSession(chain, config.rpcUrl, config.network, async ({ client: wallet }) => {
     const startedAt = Date.now();
 
     const hash = await wallet.writeContract({

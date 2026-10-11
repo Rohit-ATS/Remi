@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { StoredAccount } from "../lib/account.ts";
 import { describeError } from "../lib/account.ts";
+import type { ServerConfig } from "../lib/api.ts";
 import { hasReminders, saveReminders, unlockReminders } from "../lib/vault.ts";
 import { newId, toDateKey, type Occurrence, type Reminder } from "../lib/reminders.ts";
 import { parseAmount } from "../lib/money.ts";
@@ -18,9 +19,11 @@ import { PaymentCalendar } from "./PaymentCalendar.tsx";
  */
 export function DueDates({
   account,
+  network,
   onPay,
 }: {
   account: StoredAccount;
+  network: ServerConfig["network"];
   onPay: (occurrence: Occurrence) => void;
 }) {
   const [reminders, setReminders] = useState<Reminder[] | null>(null);
@@ -44,7 +47,7 @@ export function DueDates({
     setBusy(true);
     setError(null);
     try {
-      const list = await unlockReminders<Reminder>(account);
+      const list = await unlockReminders<Reminder>(account, network);
       setReminders(list);
       return list;
     } catch (caught) {
@@ -53,13 +56,13 @@ export function DueDates({
     } finally {
       setBusy(false);
     }
-  }, [account]);
+  }, [account, network]);
 
   const persist = async (next: Reminder[]): Promise<void> => {
     setBusy(true);
     setError(null);
     try {
-      await saveReminders(account, next);
+      await saveReminders(account, network, next);
       setReminders(next);
     } catch (caught) {
       setError(describeError(caught));

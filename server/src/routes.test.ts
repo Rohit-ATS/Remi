@@ -30,3 +30,60 @@ test("routes: public callers cannot trigger a reindex", async () => {
     store.close();
   }
 });
+
+test("routes: public fallback traffic cannot consume the edge assistant quota", async () => {
+  const app = Fastify();
+  const store = new Store(":memory:");
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () =>
+    new Response(JSON.stringify({ choices: [{ message: { content: "Edge answer." } }] }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  try {
+    registerRoutes(
+      app,
+      loadConfig({
+        NETWORK: "local",
+        KIMI_REMOTE_ENABLED: "true",
+        KIMI_API_KEY: "provider-key",
+        ASSISTANT_EDGE_TOKEN: "edge-secret",
+        KIMI_DAILY_REQUEST_LIMIT: "10",
+        ASSISTANT_RATE_LIMIT: "1",
+        ASSISTANT_RATE_LIMIT_PER_IP: "1",
+      }),
+      store,
+      { getStatus: () => ({ running: false, cursor: "0", head: null, finalizedHead: null, lastError: null, lastRunAt: null }) } as any,
+    );
+    await app.ready();
+
+    const body = { owner: "0x1111111111111111111111111111111111111111", question: "How much?" };
+    const fallback = await app.inject({ method: "POST", url: "/api/assistant", payload: body });
+    assert.equal(fallback.statusCode, 200);
+    assert.equal((fallback.json() as { source: string }).source, "fallback");
+
+    const exhaustedFallback = await app.inject({ method: "POST", url: "/api/assistant", payload: body });
+    assert.equal(exhaustedFallback.statusCode, 429);
+
+    const edge = await app.inject({
+      method: "POST",
+      url: "/api/assistant",
+      headers: { "x-remi-assistant-token": "edge-secret" },
+      payload: body,
+    });
+    assert.equal(edge.statusCode, 200);
+    assert.equal((edge.json() as { source: string }).source, "model");
+
+    const exhaustedEdge = await app.inject({
+      method: "POST",
+      url: "/api/assistant",
+      headers: { "x-remi-assistant-token": "edge-secret" },
+      payload: body,
+    });
+    assert.equal(exhaustedEdge.statusCode, 429);
+  } finally {
+    globalThis.fetch = originalFetch;
+    await app.close();
+    store.close();
+  }
+});

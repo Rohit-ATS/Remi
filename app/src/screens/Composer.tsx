@@ -142,7 +142,7 @@ export function Composer({
           setBook([]);
         } else {
           try {
-            currentBook = await unlockPayeeBook(account);
+            currentBook = await unlockPayeeBook(account, config.network);
             setBook(currentBook);
           } catch (caught) {
             setNotice(describeError(caught));
@@ -167,7 +167,7 @@ export function Composer({
       }
       await openConfirm(next);
     },
-    [account, book, openConfirm],
+    [account, book, config.network, openConfirm],
   );
 
   // Dictation produces a whole sentence, memo and all, so it goes to the first
@@ -186,7 +186,7 @@ export function Composer({
     setSheetError(null);
     try {
       const next = upsertEntry(book ?? [], entry);
-      await savePayeeBook(account, next);
+      await savePayeeBook(account, config.network, next);
       setBook(next);
       setUnknownLabel(null);
       if (pending !== null) await openConfirm({ ...pending, entry });

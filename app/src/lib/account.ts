@@ -23,6 +23,7 @@ import {
 } from "@category-labs/mera";
 import { toViemAccount } from "@category-labs/mera/viem";
 import { createWalletClient, http, type Address, type Chain, type WalletClient } from "viem";
+import type { ServerConfig } from "./api.ts";
 
 export type StoredAccount = {
   address: Address;
@@ -76,6 +77,23 @@ export function signOut(): void {
   } catch {
     // Nothing to do: there is no key material to clear, only a pointer.
   }
+}
+
+/** Demo keys are deliberately limited to networks where their token has no real value. */
+export function demoAccountsAllowed(network: ServerConfig["network"] | null | undefined): boolean {
+  return network === "local" || network === "testnet";
+}
+
+/** Removes a demo key on a real-money network without disturbing a passkey account. */
+export function clearDemoAccount(): boolean {
+  const demoAccount = readStored()?.demo === true;
+  try {
+    localStorage.removeItem(DEMO_KEY_STORAGE);
+    if (demoAccount) localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Browser storage can be unavailable; there is no usable demo key in that case.
+  }
+  return demoAccount;
 }
 
 // ---- the demo account
@@ -132,8 +150,15 @@ export async function demoPrfOutput(salt?: Uint8Array): Promise<Uint8Array<Array
   return new Uint8Array(await crypto.subtle.digest("SHA-256", input));
 }
 
-/** Signs in without a passkey, for devices and demos that cannot run one. */
-export function createDemoAccount(label: string): StoredAccount {
+/** Signs in without a passkey on a local or test network. */
+export function createDemoAccount(
+  label: string,
+  network: ServerConfig["network"] | null | undefined,
+): StoredAccount {
+  if (!demoAccountsAllowed(network)) {
+    clearDemoAccount();
+    throw new Error("Demo accounts are only available on local and testnet deployments.");
+  }
   let key = readDemoKey();
   if (key === null) {
     key = new Uint8Array(new ArrayBuffer(32));
@@ -238,13 +263,20 @@ export type SessionContext = {
 export async function withSession<T>(
   chain: Chain,
   rpcUrl: string,
+  network: ServerConfig["network"],
   fn: (context: SessionContext) => Promise<T>,
 ): Promise<T> {
   const stored = readStored();
   if (stored === null) throw new Error("Not signed in.");
 
-  const demo = stored.demo === true ? await demoPrfOutput() : null;
-  if (demo !== null) return runSession(demo, chain, rpcUrl, fn);
+  if (stored.demo === true) {
+    if (!demoAccountsAllowed(network)) {
+      clearDemoAccount();
+      throw new Error("Demo accounts are only available on local and testnet deployments.");
+    }
+    const demo = await demoPrfOutput();
+    if (demo !== null) return runSession(demo, chain, rpcUrl, fn);
+  }
 
   const { prfOutput } = await getPasskeyPrfOutput({
     rpId: rpId(),

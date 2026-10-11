@@ -193,6 +193,7 @@ export function PayScreen({
               </div>
               <DueDates
                 account={account}
+                network={config.network}
                 onPay={(occurrence) =>
                   compose(
                     `Pay ${occurrence.reminder.label}${
