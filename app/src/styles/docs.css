@@ -17,7 +17,11 @@
 .docs-breadcrumb { font-size: 12px; color: var(--hushed); margin-bottom: 55px; }
 .docs-breadcrumb span { padding: 0 10px; color: var(--faint); }
 .docs-title { padding-bottom: 34px; border-bottom: 1px solid var(--rule); margin-bottom: 32px; }
+.docs-title-meta { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .docs-eyebrow { color: var(--accent); text-transform: uppercase; }
+.docs-agent-copy { display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--rule); border-radius: 999px; padding: 7px 10px; background: transparent; color: var(--hushed); cursor: pointer; font-family: var(--mono); font-size: 10px; letter-spacing: .035em; transition: background 160ms ease, border-color 160ms ease, color 160ms ease; }
+.docs-agent-copy:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.docs-agent-copy span { color: var(--accent); font-size: 11px; font-weight: 700; }
 .docs-title h1 { font-size: clamp(34px, 3.5vw, 52px); max-width: 620px; line-height: 1.08; letter-spacing: -.045em; margin: 18px 0; }
 .docs-title p { font-size: 17px; line-height: 1.75; color: var(--hushed); max-width: 590px; }
 .docs-section { margin: 32px 0; }
@@ -72,6 +76,8 @@
   .docs-breadcrumb { margin-bottom: 32px; }
   .docs-cards, .docs-boundary { grid-template-columns: 1fr; }
   .docs-title p { font-size: 15px; }
+  .docs-title-meta { align-items: flex-start; }
+  .docs-agent-copy { flex: 0 0 auto; }
   .docs-flow { grid-template-columns: 1fr; }
   .docs-flow > span + span { border-left: 0; border-top: 1px solid var(--rule); }
 }

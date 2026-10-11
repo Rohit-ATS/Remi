@@ -1,9 +1,40 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Wordmark, ArrowUpRight, ArrowRight } from "../site/primitives.tsx";
 import { ThemeToggle } from "../components/ThemeToggle.tsx";
 import "../styles/docs.css";
 
 const REPO = "https://github.com/Rohit-ATS/Remi";
+const AI_AGENT_CONTEXT = [
+  "# Remi — project context for AI agents",
+  "",
+  "Remi is a non-custodial contractor-payout product on Monad. The React browser app signs payouts directly with the payer's passkey-derived account. The Fastify server never holds a production payout key: it indexes finalized PaymentSent events into SQLite and serves receipts, books, Passport summaries, deterministic underwriting, and a read-only assistant.",
+  "",
+  "## Repository map",
+  "- app/: React + Vite product and documentation UI.",
+  "- server/: Fastify API, SQLite projection, chain indexer, books and underwriting.",
+  "- contracts/: DemoUSD and RemiPayouts Solidity contracts.",
+  "- scripts/: compile, deploy, demo and end-to-end payment verification.",
+  "",
+  "## Important boundaries",
+  "- Private payee names, labels, categories and memos stay in the encrypted browser vault; never put them in calldata, events or the API projection.",
+  "- A normal payTo settlement produces a public receipt but never changes Passport income.",
+  "- Passport credit requires payToWithPassportAttestation: a one-time admin EIP-712/EIP-1271 signature bound to payer, payee, amount, nonce, deadline, chain and contract.",
+  "- The server exposes only finalized blocks. It persists block hashes and rewinds/replays a reorged suffix. Treat the configured confirmation depth as the chain finality policy.",
+  "- The assistant cannot sign, invoke tools or mutate money. Remote Kimi calls are disabled by default and require an authenticated edge token plus a durable daily budget.",
+  "",
+  "## Development",
+  "npm ci && npm run compile && npm run chain",
+  "NETWORK=local npm run deploy && NETWORK=local npm run demo && npm run dev",
+  "",
+  "## Deployment",
+  "- GitHub Pages hosts the static app and needs the API_BASE Actions variable.",
+  "- Render hosts the API; use persistent storage for DB_PATH and set exact CORS_ORIGINS.",
+  "- Never configure PRIVATE_KEY on the production API.",
+  "- A changed RemiPayouts contract requires a new deployment and updated PAYOUTS_ADDRESS / START_BLOCK.",
+  "",
+  `Repository: ${REPO}`,
+  "Read the current documentation section below as product context; do not infer permissions or secrets from it.",
+].join("\n");
 const pages = [
   { id: "overview", group: "GETTING STARTED", title: "Introduction", description: "Payments that leave a record.", subtitle: "A guide to Remi: contractor payouts, readable books, and an income history that travels with the worker." },
   { id: "payouts", group: "THE PRODUCT", title: "Sending a payout", description: "From a sentence to settlement.", subtitle: "Understand what happens when you pay a contractor, and what you need before your first payment." },
@@ -22,6 +53,26 @@ function Note({ children }: { children: ReactNode }) {
 }
 function Code({ children }: { children: string }) {
   return <pre className="docs-code"><code>{children}</code></pre>;
+}
+
+function AgentCopyButton({ page }: { page: (typeof pages)[number] }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async (): Promise<void> => {
+    const current = `\n\n## Current docs section\n${page.title}\n${page.subtitle}\nURL: ${location.href}`;
+    try {
+      await navigator.clipboard.writeText(`${AI_AGENT_CONTEXT}${current}`);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      // Clipboard permissions can be unavailable in an embedded browser. The
+      // button remains harmless rather than masking the documentation itself.
+      setCopied(false);
+    }
+  };
+  return <button className="docs-agent-copy" type="button" onClick={() => void copy()} aria-live="polite">
+    <span aria-hidden="true">{copied ? "✓" : "{}"}</span>
+    {copied ? "Copied for your agent" : "Copy for AI agents"}
+  </button>;
 }
 
 function Article({ id }: { id: string }) {
@@ -82,7 +133,7 @@ export function Docs({ section }: { section: string }) {
     <a className="docs-skip" href="#docs-article" onClick={(event) => { event.preventDefault(); document.getElementById("docs-article")?.focus(); }}>Skip to content</a>
     <header className="docs-header"><div className="docs-brand"><a href="#/" aria-label="Remi home"><Wordmark /></a><span className="docs-brand-divider" /><a href="#/docs">Docs</a></div><div className="docs-header-actions"><ThemeToggle /><a className="docs-repo" href={REPO}>GitHub <ArrowUpRight /></a><a className="btn" data-variant="dark" href="#/app">Open app <ArrowRight /></a></div></header>
     <div className="docs-layout"><aside className="docs-sidebar"><span className="docs-sidebar-caption">DOCUMENTATION</span><nav aria-label="Documentation">{pages.map((item, i) => <div key={item.id}>{(i === 0 || pages[i - 1]?.group !== item.group) && <p className="docs-nav-group">{item.group}</p>}<a href={`#/docs/${item.id}`} aria-current={item.id === page.id ? "page" : undefined}>{item.title}</a></div>)}</nav><a className="docs-source" href={REPO}>Explore the source <ArrowUpRight /></a></aside>
-    <main className="docs-article" id="docs-article" tabIndex={-1}><div className="docs-breadcrumb">Documentation <span>/</span> {page.title}</div><header className="docs-title"><span className="docs-eyebrow">{page.title}</span><h1>{page.description}</h1><p>{page.subtitle}</p></header><Article id={page.id} /><footer className="docs-bottom"><a href={`${REPO}/tree/main/app/src/screens/Docs.tsx`}>View this guide on GitHub <ArrowUpRight /></a>{next && <a className="docs-next" href={`#/docs/${next.id}`}><small>UP NEXT</small><span>{next.title} <ArrowRight /></span></a>}</footer></main>
+    <main className="docs-article" id="docs-article" tabIndex={-1}><div className="docs-breadcrumb">Documentation <span>/</span> {page.title}</div><header className="docs-title"><div className="docs-title-meta"><span className="docs-eyebrow">{page.title}</span><AgentCopyButton page={page} /></div><h1>{page.description}</h1><p>{page.subtitle}</p></header><Article id={page.id} /><footer className="docs-bottom"><a href={`${REPO}/tree/main/app/src/screens/Docs.tsx`}>View this guide on GitHub <ArrowUpRight /></a>{next && <a className="docs-next" href={`#/docs/${next.id}`}><small>UP NEXT</small><span>{next.title} <ArrowRight /></span></a>}</footer></main>
     <aside className="docs-margin"><span className="docs-eyebrow">GOOD TO KNOW</span><p>Start with a local demo. Follow the complete payment from confirmation to receipt.</p><a href="#/docs/local">Local setup <ArrowRight /></a><div className="docs-margin-rule" /><span className="docs-eyebrow">OPEN SOURCE</span><p>Read the implementation behind the guide.</p><a href={REPO}>Rohit-ATS / Remi <ArrowUpRight /></a></aside></div>
   </div>;
 }
