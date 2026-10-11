@@ -1,5 +1,6 @@
 import type { Payout } from "../lib/api.ts";
 import { formatDate, formatUsd, shortAddress } from "../lib/money.ts";
+import { routeHref } from "../lib/router.ts";
 
 /**
  * Payment history, as a table.
@@ -115,7 +116,7 @@ export function PaymentHistory({
                     <td className="history__action">
                       <a
                         className="iconbtn"
-                        href={`#/r/${payout.receipt_no}`}
+                        href={routeHref(`/r/${payout.receipt_no}`)}
                         aria-label={`Open receipt ${payout.receipt_no}`}
                       >
                         <ReceiptIcon />

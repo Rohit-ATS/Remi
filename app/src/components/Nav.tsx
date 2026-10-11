@@ -4,6 +4,7 @@ import type { StoredAccount } from "../lib/account.ts";
 import { shortAddress } from "../lib/money.ts";
 import { Wordmark } from "../site/primitives.tsx";
 import { ThemeToggle } from "./ThemeToggle.tsx";
+import { routeHref } from "../lib/router.ts";
 
 /**
  * The product's section navigation, in the two shapes a real app needs.
@@ -15,10 +16,10 @@ import { ThemeToggle } from "./ThemeToggle.tsx";
  */
 
 export const SECTIONS = [
-  { href: "#/app", name: "home", label: "Home", hint: "Pay and review", Icon: HomeIcon },
-  { href: "#/books", name: "books", label: "Books", hint: "Categories and totals", Icon: BooksIcon },
+  { href: "/app", name: "home", label: "Home", hint: "Pay and review", Icon: HomeIcon },
+  { href: "/books", name: "books", label: "Books", hint: "Categories and totals", Icon: BooksIcon },
   {
-    href: "#/passport",
+    href: "/passport",
     name: "passport",
     label: "Passport",
     hint: "What you have been paid",
@@ -54,7 +55,7 @@ export function TabBar({ active }: { active: string }) {
           <a
             key={name}
             className="tab"
-            href={href}
+            href={routeHref(href)}
             {...(active === name ? { "aria-current": "page" as const } : {})}
           >
             <span className="tab__icon" aria-hidden="true">
@@ -82,7 +83,7 @@ export function SideNav({
 }) {
   return (
     <nav className="rail" aria-label="Sections">
-      <a className="rail__mark" href="#/app" aria-label="Remi home">
+      <a className="rail__mark" href={routeHref("/app")} aria-label="Remi home">
         <Wordmark />
       </a>
 
@@ -91,7 +92,7 @@ export function SideNav({
           <a
             key={name}
             className="railitem"
-            href={href}
+            href={routeHref(href)}
             {...(active === name ? { "aria-current": "page" as const } : {})}
           >
             <span className="railitem__icon" aria-hidden="true">

@@ -4,6 +4,7 @@ import type { StoredAccount } from "../lib/account.ts";
 import { formatDate, formatMonth, formatUsd, shortAddress } from "../lib/money.ts";
 import { AppHeader } from "../components/AppHeader.tsx";
 import { PaymentHistory } from "../components/PaymentHistory.tsx";
+import { routeHref } from "../lib/router.ts";
 
 /**
  * The Passport: a worker's own income record.
@@ -86,7 +87,7 @@ export function PassportScreen({
 
   const share = async (): Promise<void> => {
     try {
-      await navigator.clipboard.writeText(`${location.origin}${location.pathname}#/p/${address}`);
+      await navigator.clipboard.writeText(`${location.origin}${routeHref(`/p/${address}`)}`);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -267,7 +268,7 @@ export function PassportScreen({
                   direction="sent"
                   heading="Payments sent"
                   description="What you have paid out. This half is yours alone — it is left off the record you share."
-                  viewAllUrl={sent.length > 0 ? "#/books" : undefined}
+                  viewAllUrl={sent.length > 0 ? routeHref("/books") : undefined}
                   csvUrl={sent.length > 0 ? api.csvUrl(address) : undefined}
                   emptyNote="Payments you send appear here, and on the recipient’s Passport."
                 />

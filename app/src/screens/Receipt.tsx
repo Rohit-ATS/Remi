@@ -3,6 +3,7 @@ import { api, type Payout, type ServerConfig } from "../lib/api.ts";
 import type { StoredAccount } from "../lib/account.ts";
 import { formatDate, formatExact, formatUsd, shortAddress } from "../lib/money.ts";
 import { AppHeader } from "../components/AppHeader.tsx";
+import { routeHref } from "../lib/router.ts";
 
 /**
  * A settled payout.
@@ -62,7 +63,7 @@ export function ReceiptScreen({
   }, [receiptNo]);
 
   const share = async (): Promise<void> => {
-    const url = `${location.origin}${location.pathname}#/r/${receiptNo}`;
+    const url = `${location.origin}${routeHref(`/r/${receiptNo}`)}`;
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
@@ -144,7 +145,7 @@ export function ReceiptScreen({
             <button type="button" className="btn btn-ghost" onClick={() => void share()}>
               {copied ? "Link copied" : "Share receipt"}
             </button>
-            <a className="btn btn-ghost" href={`#/p/${receipt.payee}`}>
+            <a className="btn btn-ghost" href={routeHref(`/p/${receipt.payee}`)}>
               {isRecipient ? "My Passport" : "Recipient's Passport"}
             </a>
           </div>
@@ -157,7 +158,7 @@ export function ReceiptScreen({
                 Every payout you receive through Remi adds to an income history you own — across
                 every client, not just this one. Set up with Face ID to claim it.
               </p>
-              <a className="btn btn-accent" href="#/">
+              <a className="btn btn-accent" href={routeHref("/")}>
                 Claim my Passport
               </a>
             </div>

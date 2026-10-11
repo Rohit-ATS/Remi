@@ -14,7 +14,7 @@ import {
 } from "../site/Sections.tsx";
 
 /**
- * The public front page, and the app's `#/` route.
+ * The public front page at the root route.
  *
  * It was a separate deployment whose every call to action was an href to
  * somewhere else. Now it is a route like any other, so it knows whether anyone

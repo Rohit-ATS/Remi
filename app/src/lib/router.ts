@@ -1,15 +1,7 @@
-// A hash router in a hundred lines, now carrying the whole site.
-//
-// Hash routing rather than history routing because the two public surfaces —
-// a shared receipt and a shared Passport — have to open from a pasted link on
-// any static host, with no server rewrite rules to get wrong on demo day.
-//
-// Since the landing page moved in, the hash has two jobs. `#/books` is a
-// route; `#passport` is the landing page scrolled to its Passport section, and
-// the marketing copy is full of the second kind. The leading slash is what
-// tells them apart, so anything without one is an anchor on the landing page
-// and is handed back as such rather than being parsed into a route that does
-// not exist.
+// Clean, history-based routes with a small compatibility bridge for links
+// shared before Remi moved away from hash routing. The public site still uses
+// ordinary #anchors on the landing page; only a hash beginning with `#/` is a
+// legacy application route.
 
 import { useEffect, useState } from "react";
 
@@ -18,87 +10,133 @@ export type Route =
   | { name: "landing"; anchor: string | null }
   | { name: "signin"; mode: "create" | "signin"; email: string | null; next: string }
   | { name: "home" }
-  /**
-   * The payment screen. The three optional parts seed the composer, so a
-   * shortcut elsewhere in the app is an ordinary link rather than shared state
-   * — and the resulting URL can be pasted, bookmarked or reloaded.
-   */
   | { name: "pay"; to: string | null; amount: string | null; memo: string | null }
   | { name: "books" }
   | { name: "passport" }
   | { name: "receipt"; receiptNo: number }
-  | { name: "public-passport"; address: string };
+  | { name: "public-passport"; address: string }
+  | { name: "not-found" };
 
 /** Routes that require an account. Everything else opens for anyone. */
 export const GATED: ReadonlySet<Route["name"]> = new Set(["home", "pay", "books", "passport"]);
 
-export function parseRoute(hash: string): Route {
-  const raw = hash.startsWith("#") ? hash.slice(1) : hash;
+const FALLBACK_KEY = "remi:history-fallback";
 
-  // No leading slash means an in-page anchor, which only the landing page has.
-  if (!raw.startsWith("/")) {
-    const anchor = raw.replace(/^#/, "");
+function basePath(): string {
+  const base = import.meta.env.BASE_URL;
+  return base.endsWith("/") ? base : `${base}/`;
+}
+
+/** Makes an in-app URL work both locally and under GitHub Pages' /Remi/ base. */
+export function routeHref(to: string): string {
+  const base = basePath();
+  if (to.startsWith("#")) return `${base}${to}`;
+  const path = to.startsWith("/") ? to : `/${to}`;
+  return path === "/" ? base : `${base.slice(0, -1)}${path}`;
+}
+
+function currentPath(): string {
+  const base = basePath();
+  const pathname = location.pathname;
+  if (base !== "/" && pathname === base.slice(0, -1)) return "/";
+  if (base !== "/" && pathname.startsWith(base)) return `/${pathname.slice(base.length)}`;
+  return pathname || "/";
+}
+
+function safeNext(value: string | null): string {
+  return value !== null && /^\/[\w/-]*$/.test(value) ? value : "/app";
+}
+
+/** Parses a clean URL path. `#/…` remains accepted for old pasted links. */
+export function parseRoute(value: string): Route {
+  const legacyPath = value.startsWith("#/") ? value.slice(1) : null;
+  const url = new URL((legacyPath ?? value) || "/", "https://remi.local");
+  const path = url.pathname.replace(/\/+$/, "") || "/";
+  const query = url.searchParams;
+  const [head, tail, ...rest] = path.slice(1).split("/");
+
+  if (path === "/") {
+    const anchor = legacyPath === null ? url.hash.slice(1) : "";
     return { name: "landing", anchor: anchor === "" ? null : anchor };
   }
 
-  const [pathPart, queryPart = ""] = raw.slice(1).split("?");
-  const query = new URLSearchParams(queryPart);
-  const [head, tail] = (pathPart ?? "").split("/");
-
-  if (head === "app") return { name: "home" };
-  if (head === "docs") return { name: "docs", section: tail || "overview" };
-  if (head === "pay") {
-    return {
-      name: "pay",
-      to: query.get("to"),
-      amount: query.get("amount"),
-      memo: query.get("memo"),
-    };
+  if (head === "app" && tail === undefined) return { name: "home" };
+  if (head === "docs" && rest.length === 0) return { name: "docs", section: tail || "overview" };
+  if (head === "pay" && tail === undefined) {
+    return { name: "pay", to: query.get("to"), amount: query.get("amount"), memo: query.get("memo") };
   }
-  if (head === "books") return { name: "books" };
-  if (head === "passport") return { name: "passport" };
-
-  if (head === "signin") {
-    const next = query.get("next");
+  if (head === "books" && tail === undefined) return { name: "books" };
+  if (head === "passport" && tail === undefined) return { name: "passport" };
+  if (head === "signin" && tail === undefined) {
     return {
       name: "signin",
       mode: query.get("mode") === "signin" ? "signin" : "create",
       email: query.get("email"),
       // Only an in-app path is honoured, so a crafted link cannot bounce
       // someone off-site after they authenticate.
-      next: next !== null && /^\/[\w/-]*$/.test(next) ? next : "/app",
+      next: safeNext(query.get("next")),
     };
   }
-
-  if (head === "r" && tail !== undefined) {
-    const n = Number(tail);
-    if (Number.isInteger(n) && n > 0) return { name: "receipt", receiptNo: n };
+  if (head === "r" && tail !== undefined && rest.length === 0) {
+    const receiptNo = Number(tail);
+    if (Number.isInteger(receiptNo) && receiptNo > 0) return { name: "receipt", receiptNo };
   }
-  if (head === "p" && tail !== undefined && /^0x[0-9a-fA-F]{40}$/i.test(tail)) {
+  if (head === "p" && tail !== undefined && rest.length === 0 && /^0x[0-9a-fA-F]{40}$/i.test(tail)) {
     return { name: "public-passport", address: tail.toLowerCase() };
   }
+  return { name: "not-found" };
+}
 
-  return { name: "landing", anchor: null };
+function takeFallbackPath(): string | null {
+  try {
+    const pending = sessionStorage.getItem(FALLBACK_KEY);
+    if (pending !== null) sessionStorage.removeItem(FALLBACK_KEY);
+    return pending;
+  } catch {
+    return null;
+  }
+}
+
+function readRoute(): Route {
+  const fallback = takeFallbackPath();
+  if (fallback !== null && fallback.startsWith("/")) {
+    history.replaceState(null, "", routeHref(fallback));
+    return parseRoute(fallback);
+  }
+
+  // Old shared URLs keep working, but are immediately canonicalised so the
+  // address bar, copied links and browser history all use the new form.
+  if (location.hash.startsWith("#/")) {
+    const legacyPath = location.hash.slice(1);
+    history.replaceState(null, "", routeHref(legacyPath));
+    return parseRoute(legacyPath);
+  }
+  return parseRoute(`${currentPath()}${location.search}${location.hash}`);
 }
 
 export function useRoute(): Route {
-  const [route, setRoute] = useState<Route>(() => parseRoute(location.hash));
+  const [route, setRoute] = useState<Route>(readRoute);
 
   useEffect(() => {
-    const onChange = (): void => setRoute(parseRoute(location.hash));
+    const onChange = (): void => setRoute(readRoute());
+    window.addEventListener("popstate", onChange);
     window.addEventListener("hashchange", onChange);
-    return () => window.removeEventListener("hashchange", onChange);
+    return () => {
+      window.removeEventListener("popstate", onChange);
+      window.removeEventListener("hashchange", onChange);
+    };
   }, []);
 
   return route;
 }
 
 export function navigate(to: string): void {
-  location.hash = to;
+  history.pushState(null, "", routeHref(to));
+  window.dispatchEvent(new PopStateEvent("popstate"));
 }
 
 /** The sign-in link for a given destination, with whatever is known prefilled. */
-export function signInHref(
+export function signInPath(
   options: { mode?: "create" | "signin"; email?: string; next?: string } = {},
 ): string {
   const query = new URLSearchParams();
@@ -106,17 +144,17 @@ export function signInHref(
   if (options.email !== undefined && options.email !== "") query.set("email", options.email);
   if (options.next !== undefined) query.set("next", options.next);
   const suffix = query.toString();
-  return `#/signin${suffix === "" ? "" : `?${suffix}`}`;
+  return `/signin${suffix === "" ? "" : `?${suffix}`}`;
 }
 
-/**
- * Keeps the viewport honest when the route changes.
- *
- * A hash router gets no scroll restoration for free, so moving from a scrolled
- * landing page into the dashboard would otherwise land halfway down it. An
- * anchor on the landing page is the one case where the browser's own jump is
- * what we want, so it is left alone.
- */
+/** The sign-in href for a given destination, including the hosting base path. */
+export function signInHref(
+  options: { mode?: "create" | "signin"; email?: string; next?: string } = {},
+): string {
+  return routeHref(signInPath(options));
+}
+
+/** Keeps the viewport honest when the route changes. */
 export function useScrollReset(route: Route): void {
   const key = route.name === "landing" ? `landing:${route.anchor ?? ""}` : route.name === "docs" ? `docs:${route.section}` : route.name;
 

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createAccount, describeError, signIn, type StoredAccount } from "../lib/account.ts";
 import type { ServerConfig } from "../lib/api.ts";
-import { navigate, signInHref } from "../lib/router.ts";
+import { navigate, routeHref, signInHref } from "../lib/router.ts";
 import { AppHeader } from "../components/AppHeader.tsx";
 import { Check } from "../site/primitives.tsx";
 
@@ -14,7 +14,7 @@ import { Check } from "../site/primitives.tsx";
  * landing page already collected, both arrive in the route.
  *
  * `next` is where the person was heading before they were asked to
- * authenticate, so a link to #/books does not dump them on the dashboard.
+ * authenticate, so a link to /books does not dump them on the dashboard.
  */
 export function SignIn({
   config,
@@ -131,7 +131,7 @@ export function SignIn({
         </p>
 
         <p className="small">
-          <a href="#/">Back to the home page</a>
+          <a href={routeHref("/")}>Back to the home page</a>
         </p>
       </div>
     </main>

@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   // GitHub Pages serves this repo under /Remi/, so a Pages build sets
-  // BASE_PATH=/Remi/app/. Local dev and any root-hosted deploy leave it alone.
+  // BASE_PATH=/Remi/. Local dev and any root-hosted deploy leave it alone.
   base: process.env.BASE_PATH ?? "/",
   plugins: [react()],
   server: {

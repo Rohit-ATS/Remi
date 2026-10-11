@@ -2,6 +2,7 @@ import type { ServerConfig } from "../lib/api.ts";
 import type { StoredAccount } from "../lib/account.ts";
 import { Wordmark } from "../site/primitives.tsx";
 import { ThemeToggle } from "./ThemeToggle.tsx";
+import { routeHref } from "../lib/router.ts";
 
 /**
  * The product's top bar, once instead of five times.
@@ -26,7 +27,7 @@ export function AppHeader({
   return (
     <header className="topbar">
       <span className="mark">
-        <a href={signedIn ? "#/app" : "#/"} aria-label="Remi home">
+        <a href={routeHref(signedIn ? "/app" : "/")} aria-label="Remi home">
           <Wordmark />
         </a>
       </span>

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f8f7f4" />
+    <title>Page not found — Remi</title>
+    <style>
+      :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f8f7f4; color: #151513; }
+      * { box-sizing: border-box; }
+      body { min-height: 100vh; margin: 0; display: grid; place-items: center; padding: 24px; background-image: radial-gradient(#d7d2c9 1px, transparent 1px); background-size: 28px 28px; }
+      main { width: min(100%, 620px); padding: clamp(32px, 8vw, 72px); border: 1px solid #dfdcd6; border-radius: 28px; background: rgba(255, 255, 255, .92); box-shadow: 0 24px 80px rgba(27, 24, 19, .08); }
+      .mark { margin: 0 0 54px; color: #5b46ff; font: 700 20px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: -.09em; }
+      .eyebrow { margin: 0 0 14px; color: #77736c; font: 600 11px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .12em; }
+      h1 { max-width: 440px; margin: 0; font-size: clamp(42px, 8vw, 72px); line-height: .94; letter-spacing: -.075em; }
+      p { max-width: 390px; margin: 24px 0 32px; color: #706c65; font-size: 17px; line-height: 1.5; }
+      a { display: inline-flex; align-items: center; min-height: 46px; padding: 0 20px; border-radius: 999px; background: #5b46ff; color: white; text-decoration: none; font-weight: 700; }
+      a:hover { background: #4938dc; }
+      @media (prefers-color-scheme: dark) { :root { color-scheme: dark; background: #151513; color: #f8f7f4; } body { background-color: #151513; background-image: radial-gradient(#3c3933 1px, transparent 1px); } main { background: rgba(26, 25, 23, .94); border-color: #38352f; box-shadow: none; } p, .eyebrow { color: #aaa49a; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="mark">remi</div>
+      <div class="eyebrow">404 / ROUTE NOT FOUND</div>
+      <h1>This page did not settle.</h1>
+      <p id="message">The link is incomplete, or this route no longer exists.</p>
+      <a id="home" href="/">Back to Remi</a>
+    </main>
+    <script>
+      (() => {
+        const key = "remi:history-fallback";
+        const parts = window.location.pathname.split("/").filter(Boolean);
+        const githubProject = window.location.hostname.endsWith(".github.io") && parts.length > 0;
+        const base = githubProject ? `/${parts[0]}/` : "/";
+        const routeParts = githubProject ? parts.slice(1) : parts;
+        const route = `/${routeParts.join("/")}`;
+        const valid = /^(?:\/app|\/pay|\/books|\/passport|\/signin|\/docs(?:\/[^/]+)?|\/r\/[1-9]\d*|\/p\/0x[0-9a-fA-F]{40})\/?$/.test(route);
+        const home = document.getElementById("home");
+        home.href = base;
+        if (!valid) return;
+        try {
+          sessionStorage.setItem(key, `${route}${window.location.search}${window.location.hash}`);
+          window.location.replace(base);
+        } catch {
+          document.getElementById("message").textContent = "This valid Remi link needs browser storage to open from static hosting.";
+        }
+      })();
+    </script>
+  </body>
+</html>

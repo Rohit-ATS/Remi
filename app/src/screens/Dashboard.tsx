@@ -4,6 +4,7 @@ import type { StoredAccount } from "../lib/account.ts";
 import { getBalance } from "../lib/payouts.ts";
 import { formatAmount, formatMonth, formatUsd } from "../lib/money.ts";
 import { AppHeader } from "../components/AppHeader.tsx";
+import { routeHref } from "../lib/router.ts";
 
 /**
  * Home.
@@ -109,7 +110,7 @@ export function DashboardScreen({
         </div>
 
         <div className="balance__actions">
-          <a className="btn btn-primary" href="#/pay">
+          <a className="btn btn-primary" href={routeHref("/pay")}>
             Pay someone
           </a>
           {config.faucet === true && (
@@ -148,7 +149,7 @@ export function DashboardScreen({
           <section className="block" aria-label="Pay">
             <div className="sectionhead">
               <h2>Pay</h2>
-              {payees.length > 0 && <a href="#/books">Everyone</a>}
+              {payees.length > 0 && <a href={routeHref("/books")}>Everyone</a>}
             </div>
 
             {payees.length > 0 && (
@@ -179,7 +180,7 @@ export function DashboardScreen({
               </div>
             )}
 
-            <a className="btn btn-primary btn-block" href="#/pay">
+            <a className="btn btn-primary btn-block" href={routeHref("/pay")}>
               Pay someone
             </a>
             <p className="small faint">
@@ -223,7 +224,7 @@ export function DashboardScreen({
                     for {data.yearToDate.year}.
                   </strong>{" "}
                   {data.needs1099.map((c) => `${c.label} (${formatUsd(c.total)})`).join(", ")}.{" "}
-                  <a href="#/books">Open Books</a>
+                  <a href={routeHref("/books")}>Open Books</a>
                 </div>
               )}
 
@@ -241,7 +242,7 @@ export function DashboardScreen({
                 <section className="block">
                   <div className="sectionhead">
                     <h2>Last six months</h2>
-                    <a href="#/books">Books</a>
+                    <a href={routeHref("/books")}>Books</a>
                   </div>
                   <div className="chart">
                     {data.byMonth.map((m) => {
@@ -272,11 +273,11 @@ export function DashboardScreen({
           )}
 
           <div className="quickrow">
-            <a className="quick" href="#/books">
+            <a className="quick" href={routeHref("/books")}>
               <b>Books</b>
               <span>Categories, totals, CSV</span>
             </a>
-            <a className="quick" href="#/passport">
+            <a className="quick" href={routeHref("/passport")}>
               <b>My Passport</b>
               <span>What I have been paid</span>
             </a>
@@ -307,5 +308,5 @@ function payHref(seed: { to: string; amount?: string; memo?: string }): string {
   // way, but the link people see and paste should be plain.
   if (seed.amount !== undefined) query.set("amount", seed.amount.replace(/,/g, ""));
   if (seed.memo !== undefined && seed.memo !== "") query.set("memo", seed.memo);
-  return `#/pay?${query.toString()}`;
+  return routeHref(`/pay?${query.toString()}`);
 }

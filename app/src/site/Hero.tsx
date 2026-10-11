@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ArrowUpRight, Button, Check } from "./primitives.tsx";
 import { TICKER } from "./content.ts";
-import { navigate, signInHref } from "../lib/router.ts";
+import { navigate, signInPath } from "../lib/router.ts";
 
 /**
  * The front door.
@@ -22,7 +22,7 @@ function Capture() {
       setState("error");
       return;
     }
-    navigate(signInHref({ mode: "create", email: trimmed }).slice(1));
+    navigate(signInPath({ mode: "create", email: trimmed }));
   };
 
   return (

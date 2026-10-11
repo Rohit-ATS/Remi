@@ -6,6 +6,7 @@ import { formatAmount, formatUsd, shortAddress } from "../lib/money.ts";
 import { Composer } from "./Composer.tsx";
 import { AppHeader } from "../components/AppHeader.tsx";
 import { DueDates } from "../components/DueDates.tsx";
+import { routeHref } from "../lib/router.ts";
 
 /**
  * Payments: both directions in one place.
@@ -101,7 +102,7 @@ export function PayScreen({
     }
   };
 
-  const passportLink = `${location.origin}${location.pathname}#/p/${account.address}`;
+  const passportLink = `${location.origin}${routeHref(`/p/${account.address}`)}`;
 
   return (
     <main className="shell shell--home">
@@ -111,7 +112,7 @@ export function PayScreen({
           section navigation, so it carries its own way back. */}
       <header className="homehead">
         <div>
-          <a className="backlink" href="#/app">
+          <a className="backlink" href={routeHref("/app")}>
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <path
                 d="M10 3.2 5.2 8l4.8 4.8"
@@ -210,7 +211,7 @@ export function PayScreen({
             <section className="block" aria-label="Send a payment">
               <div className="sectionhead">
                 <h2>Send</h2>
-                {payees.length > 0 && <a href="#/books">Everyone</a>}
+                {payees.length > 0 && <a href={routeHref("/books")}>Everyone</a>}
               </div>
 
               {payees.length > 0 && (
@@ -299,7 +300,7 @@ export function PayScreen({
               </div>
 
               <div className="quickrow">
-                <a className="quick" href="#/passport">
+                <a className="quick" href={routeHref("/passport")}>
                   <b>My Passport</b>
                   <span>What I have been paid</span>
                 </a>
@@ -343,15 +344,15 @@ export function PayScreen({
           )}
 
           <div className="quickrow">
-            <a className="quick" href="#/books">
+            <a className="quick" href={routeHref("/books")}>
               <b>Books</b>
               <span>Categories, totals, CSV</span>
             </a>
-            <a className="quick" href="#/passport">
+            <a className="quick" href={routeHref("/passport")}>
               <b>Payment history</b>
               <span>Sent and received</span>
             </a>
-            <a className="quick" href="#/app">
+            <a className="quick" href={routeHref("/app")}>
               <b>Home</b>
               <span>Balance and summary</span>
             </a>

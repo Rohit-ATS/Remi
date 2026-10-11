@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, apiIsUnconfigured, type ServerConfig } from "./lib/api.ts";
 import { getStoredAccount, signOut, type StoredAccount } from "./lib/account.ts";
-import { GATED, navigate, signInHref, useRoute, useScrollReset, type Route } from "./lib/router.ts";
+import { GATED, navigate, routeHref, signInPath, useRoute, useScrollReset, type Route } from "./lib/router.ts";
 import { AppHeader } from "./components/AppHeader.tsx";
 import { SideNav, TabBar } from "./components/Nav.tsx";
 import { Landing } from "./screens/Landing.tsx";
@@ -58,7 +58,7 @@ export function App() {
    */
   const redirect =
     account === null && GATED.has(route.name)
-      ? signInHref({ mode: "signin", next: pathOf(route) }).slice(1)
+      ? signInPath({ mode: "signin", next: pathOf(route) })
       : account !== null && route.name === "signin"
         ? route.next
         : null;
@@ -81,6 +81,7 @@ export function App() {
     return <Landing account={account} />;
   }
   if (route.name === "docs") return <Docs section={route.section} />;
+  if (route.name === "not-found") return <NotFound />;
 
   if (redirect !== null) {
     return <Loading config={config} account={account} />;
@@ -145,7 +146,7 @@ export function App() {
   );
 }
 
-/** The hash path a route came from, so sign-in can return to it. */
+/** The in-app path a route came from, so sign-in can return to it. */
 function pathOf(route: Route): string {
   switch (route.name) {
     case "home":
@@ -213,7 +214,7 @@ function ServerMissing({
             <a className="btn btn-ghost" href="https://github.com/Rohit-ATS/Remi">
               How to run it
             </a>
-            <a className="btn btn-soft" href="#/">
+            <a className="btn btn-soft" href={routeHref("/")}>
               Back to the home page
             </a>
           </div>
@@ -221,11 +222,25 @@ function ServerMissing({
       ) : (
         <div className="stack">
           <div className="notice notice-error">{reason}</div>
-          <a className="btn btn-ghost" href="#/">
+          <a className="btn btn-ghost" href={routeHref("/")}>
             Back to the home page
           </a>
         </div>
       )}
+    </main>
+  );
+}
+
+function NotFound() {
+  return (
+    <main className="shell">
+      <AppHeader config={null} />
+      <div className="stack">
+        <p className="eyebrow">404 / NOT FOUND</p>
+        <h1>This page did not settle.</h1>
+        <p className="hushed">The link is incomplete, or this route no longer exists.</p>
+        <p><a className="btn btn-accent" href={routeHref("/")}>Back to Remi</a></p>
+      </div>
     </main>
   );
 }

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Burger, Button, Chevron, Close, Wordmark } from "./primitives.tsx";
 import { NAV, type NavItem } from "./content.ts";
 import type { StoredAccount } from "../lib/account.ts";
-import { signInHref } from "../lib/router.ts";
+import { routeHref, signInHref } from "../lib/router.ts";
 import { ThemeToggle } from "../components/ThemeToggle.tsx";
 
 /** The black announcement strip. Dismissible, and it stays dismissed. */
@@ -16,7 +16,7 @@ export function AnnouncementBar() {
         <span>
           New: the Passport — every payout now writes your contractor a verifiable income record.
         </span>
-        <a className="annbar__link" href="#passport">
+        <a className="annbar__link" href={routeHref("#passport")}>
           Learn more
         </a>
       </div>
@@ -45,7 +45,7 @@ function Dropdown({
   if (item.links === undefined) {
     return (
       <div className="nav__item">
-        <a className="nav__trigger" href={item.href ?? "#"}>
+        <a className="nav__trigger" href={routeHref(item.href ?? "#")}>
           {item.label}
         </a>
       </div>
@@ -85,7 +85,7 @@ function Dropdown({
       {open && (
         <div className="nav__panel" id={panelId} ref={panelRef}>
           {item.links.map((link) => (
-            <a key={link.label} href={link.href} onClick={onClose}>
+            <a key={link.label} href={routeHref(link.href)} onClick={onClose}>
               <strong>{link.label}</strong>
               <span>{link.blurb}</span>
             </a>
@@ -131,7 +131,7 @@ export function Nav({ account }: { account: StoredAccount | null }) {
   return (
     <header className="nav" data-stuck={stuck}>
       <div className="site-shell nav__inner">
-        <a href="#top" aria-label="Remi home">
+        <a href={routeHref("#top")} aria-label="Remi home">
           <Wordmark />
         </a>
 
@@ -164,7 +164,7 @@ export function Nav({ account }: { account: StoredAccount | null }) {
               <a className="nav__signin" href={signInHref({ mode: "signin" })}>
                 Sign in
               </a>
-              <Button variant="ghostdark" href="#how">
+              <Button variant="ghostdark" href={routeHref("#how")}>
                 See how it works
               </Button>
               <Button variant="dark" href={signInHref({ mode: "create" })}>
@@ -176,7 +176,7 @@ export function Nav({ account }: { account: StoredAccount | null }) {
               <span className="nav__who" title={account.address}>
                 {account.label}
               </span>
-              <Button variant="dark" href="#/app">
+              <Button variant="dark" href={routeHref("/app")}>
                 Open dashboard
               </Button>
             </>
@@ -189,14 +189,14 @@ export function Nav({ account }: { account: StoredAccount | null }) {
           {NAV.flatMap((item) =>
             item.links
               ? item.links.map((link) => (
-                  <a key={link.label} href={link.href} onClick={() => setMobileOpen(false)}>
+                  <a key={link.label} href={routeHref(link.href)} onClick={() => setMobileOpen(false)}>
                     {link.label}
                   </a>
                 ))
               : [
                   <a
                     key={item.label}
-                    href={item.href ?? `#${item.label.toLowerCase()}`}
+                    href={routeHref(item.href ?? `#${item.label.toLowerCase()}`)}
                     onClick={() => setMobileOpen(false)}
                   >
                     {item.label}
@@ -213,7 +213,7 @@ export function Nav({ account }: { account: StoredAccount | null }) {
               </a>
             </>
           ) : (
-            <a href="#/app" onClick={() => setMobileOpen(false)}>
+            <a href={routeHref("/app")} onClick={() => setMobileOpen(false)}>
               Open dashboard
             </a>
           )}

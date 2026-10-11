@@ -1,7 +1,7 @@
 import { ArrowLink, ArrowUpRight, Button, Check } from "./primitives.tsx";
 import { FOOTER, STACK, TILES } from "./content.ts";
 import type { StoredAccount } from "../lib/account.ts";
-import { signInHref } from "../lib/router.ts";
+import { routeHref, signInHref } from "../lib/router.ts";
 
 /**
  * The bordered cell grid. Ramp fills this with customer logos; Remi has no
@@ -22,7 +22,7 @@ export function StackGrid() {
         <div className="gridwrap">
           <div className="cells">
             {STACK.map((entry) => (
-              <a className="cell" key={entry.name} href={entry.href}>
+              <a className="cell" key={entry.name} href={routeHref(entry.href)}>
                 <span>
                   <span className="cell__name">{entry.name}</span>
                   <span className="cell__role">{entry.role}</span>
@@ -34,7 +34,7 @@ export function StackGrid() {
             ))}
           </div>
 
-          <a className="spotlight" href="#why">
+          <a className="spotlight" href={routeHref("#why")}>
             <span className="spotlight__arrow">
               <ArrowUpRight />
             </span>
@@ -116,7 +116,7 @@ export function Passport() {
             record has a reason to bring the next business on.
           </p>
           <div style={{ marginTop: "1.6rem" }}>
-            <ArrowLink href="#advances">See what it unlocks</ArrowLink>
+            <ArrowLink href={routeHref("#advances")}>See what it unlocks</ArrowLink>
           </div>
         </div>
 
@@ -336,7 +336,7 @@ export function CTA({ account }: { account: StoredAccount | null }) {
               The payout is the wedge. The income record is the product. The underwriting is the company.
             </p>
             <div className="cta__actions">
-              <Button variant="accent" size="lg" href={account === null ? signInHref({ mode: "create" }) : "#/app"}>
+              <Button variant="accent" size="lg" href={account === null ? signInHref({ mode: "create" }) : routeHref("/app")}>
                 {account === null ? "Set up with Face ID" : "Open your dashboard"}
               </Button>
               <Button variant="onnight" size="lg" href="https://github.com/Rohit-ATS/Remi">
@@ -377,7 +377,7 @@ export function Footer({ account }: { account: StoredAccount | null }) {
       <div className="site-shell">
         <div className="footer__cols">
           <div className="footer__col">
-            <a href="#top" aria-label="Remi home">
+            <a href={routeHref("#top")} aria-label="Remi home">
               <span className="wordmark">remi</span>
             </a>
             <p className="footer__blurb">
@@ -385,7 +385,7 @@ export function Footer({ account }: { account: StoredAccount | null }) {
               AUSD on Monad. Remi never holds a key and never takes custody of funds.
             </p>
             <div style={{ marginTop: "1.2rem" }}>
-              <ArrowLink href={account === null ? signInHref({ mode: "create" }) : "#/app"}>
+              <ArrowLink href={account === null ? signInHref({ mode: "create" }) : routeHref("/app")}>
                 {account === null ? "Get started" : "Open your dashboard"}
               </ArrowLink>
             </div>
@@ -397,7 +397,7 @@ export function Footer({ account }: { account: StoredAccount | null }) {
               <ul>
                 {col.links.map((link) => (
                   <li key={link.label}>
-                    <a href={link.href}>{link.label}</a>
+                    <a href={routeHref(link.href)}>{link.label}</a>
                   </li>
                 ))}
               </ul>

@@ -171,8 +171,9 @@ failing with a fetch error. To make it live, host `server/` anywhere and set a
 repository variable `API_BASE` to its origin (Settings → Secrets and variables →
 Actions → Variables); the next deploy picks it up.
 
-Routing is hash-based, so a shared receipt (`#/r/12`) or Passport (`#/p/0x…`)
-link opens from a static host with no rewrite rules.
+The public app uses clean URLs, so a shared receipt (`/r/12`) or Passport
+(`/p/0x…`) can be pasted like an ordinary link. The Pages 404 fallback restores
+known app routes after a direct visit and shows a branded 404 page for unknown ones.
 
 ## Deploying on Render
 

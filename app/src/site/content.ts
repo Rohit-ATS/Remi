@@ -27,7 +27,7 @@ export const NAV: NavItem[] = [
   },
   { label: "Privacy", href: "#privacy" },
   { label: "Why Monad", href: "#why" },
-  { label: "Docs", href: "#/docs" },
+  { label: "Docs", href: "/docs" },
   { label: "GitHub ↗", href: "https://github.com/Rohit-ATS/Remi" },
 ];
 
@@ -111,7 +111,7 @@ export const FOOTER: { heading: string; links: { label: string; href: string }[]
     heading: "Project",
     links: [
       { label: "Source", href: "https://github.com/Rohit-ATS/Remi" },
-      { label: "Documentation", href: "#/docs" },
+      { label: "Documentation", href: "/docs" },
       { label: "Strategy", href: "https://github.com/Rohit-ATS/Remi/blob/main/docs/STRATEGY.md" },
     ],
   },
