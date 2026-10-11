@@ -269,6 +269,14 @@
   display: grid;
   gap: 0.35rem;
 }
+/* A caption belonging to one field, sitting under its input rather than
+   floating in the section as another paragraph to read first. */
+.field__hint {
+  margin: 0.1rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--faint);
+}
 /* Still usable, just plainly not what the button is about to act on. */
 .field[data-muted="true"] {
   opacity: 0.55;
@@ -1754,6 +1762,22 @@ td.n {
   color: var(--hushed);
   font-size: 0.85rem;
   font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
+}
+/* A day with nothing on it is still worth opening, so it answers to a hover
+   instead of looking like text that happens to sit in a grid. */
+.calendar__day:hover {
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+.calendar__day:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--accent-ring);
+}
+.calendar__day[data-selected="true"] {
+  background: var(--accent-soft);
+  color: var(--ink);
 }
 /* Today is marked with a ring rather than a fill, so it never competes with a
    day that actually owes money. */
@@ -1771,6 +1795,8 @@ td.n {
   animation: pop-in 320ms cubic-bezier(0.32, 1.45, 0.52, 1) both;
 }
 .calendar__day--due:hover {
+  background: var(--accent);
+  color: var(--on-accent);
   transform: translateY(-2px);
   box-shadow: 0 6px 16px var(--accent-glow);
 }
@@ -1803,6 +1829,14 @@ td.n {
 }
 .calendar__note {
   margin: 0;
+}
+
+/* ---------- one day, opened ---------- */
+
+.daysheet__title {
+  margin: 0;
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
 }
 
 .duelist {
