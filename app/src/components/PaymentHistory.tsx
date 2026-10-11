@@ -264,17 +264,19 @@ function ReceiptSheet({
         )}
       </div>
 
-      <div className="row">
-        <button type="button" className="btn btn-ghost" onClick={() => void share()}>
-          {copied ? "Link copied" : "Share receipt"}
+      <div className="receipt-actions">
+        <div className="row">
+          <button type="button" className="btn btn-ghost" onClick={() => void share()}>
+            {copied ? "Link copied" : "Share receipt"}
+          </button>
+          <a className="btn btn-ghost" href={routeHref(`/r/${payout.receipt_no}`)}>
+            Open the full receipt
+          </a>
+        </div>
+        <button type="button" className="btn btn-soft btn-block" onClick={onClose}>
+          Close
         </button>
-        <a className="btn btn-ghost" href={routeHref(`/r/${payout.receipt_no}`)}>
-          Open the full receipt
-        </a>
       </div>
-      <button type="button" className="btn btn-ghost btn-block" onClick={onClose}>
-        Close
-      </button>
     </Sheet>
   );
 }
