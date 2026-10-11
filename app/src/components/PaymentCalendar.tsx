@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   byDay,
   daysUntil,
@@ -10,7 +10,6 @@ import {
   type Reminder,
 } from "../lib/reminders.ts";
 import { formatUsd } from "../lib/money.ts";
-import { Sheet } from "../screens/Sheets.tsx";
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -24,19 +23,25 @@ const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
  * Every day is a target, not only the marked ones. A date that cannot be
  * pressed has to be read against the list underneath to answer "what is on the
  * 14th", and an empty day still has a useful answer — nothing is due, and here
- * is where to put something. Pressing one opens that day on its own.
+ * is where to put something.
+ *
+ * What a pressed day holds is reported upward rather than drawn here, so the
+ * screen can put it where there is room for it. On this one that is the column
+ * beside the calendar, which beats a sheet over the top of it: the grid stays
+ * visible, so the next day along is one click away instead of a dismissal and
+ * a click.
  */
 export function PaymentCalendar({
   reminders,
   onPay,
   onRemove,
-  onAdd,
+  onDayOpen,
 }: {
   reminders: readonly Reminder[];
   onPay: (occurrence: Occurrence) => void;
   onRemove: (id: string) => void;
-  /** Start a new due date already dated to the day that was opened. */
-  onAdd?: (dateKey: string) => void;
+  /** The opened day, for whoever is going to render it. Null closes it. */
+  onDayOpen?: (day: OpenDay | null) => void;
 }) {
   const today = new Date();
   const [cursor, setCursor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
@@ -69,9 +74,22 @@ export function PaymentCalendar({
   );
 
   // A day stays open across an edit, so removing one of three things leaves the
-  // other two on screen instead of closing the sheet out from under the tap.
+  // other two on screen instead of closing the panel out from under the tap.
   const openedDate = opened === null ? null : fromDateKey(opened);
   const openedDue = opened === null ? [] : occurrences.filter((o) => toDateKey(o.date) === opened);
+
+  // Re-reported whenever the month's occurrences change, so an edit made from
+  // the panel is reflected in the panel rather than leaving it showing what
+  // was there before.
+  useEffect(() => {
+    if (onDayOpen === undefined) return;
+    onDayOpen(
+      openedDate === null ? null : { dateKey: toDateKey(openedDate), date: openedDate, due: openedDue },
+    );
+    return () => onDayOpen(null);
+    // openedDate and openedDue are derived from exactly these two.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opened, occurrences, onDayOpen]);
 
   return (
     <div className="calendar">
@@ -168,57 +186,78 @@ export function PaymentCalendar({
         </ul>
       )}
 
-      {openedDate !== null && (
-        <Sheet label={longDate(openedDate)} dismissible onClose={() => setOpened(null)}>
-          <div className="stack-sm">
-            <p className="eyebrow">{weekdayOf(openedDate)}</p>
-            <h2 className="daysheet__title">{longDate(openedDate)}</h2>
-            <p className="hushed" style={{ margin: 0 }}>
-              {openedDue.length === 0
-                ? "Nothing is due on this day."
-                : `${openedDue.length} ${openedDue.length === 1 ? "thing" : "things"} due${
-                    sumOf(openedDue) > 0n ? ` · ${formatUsd(sumOf(openedDue))}` : ""
-                  }`}
-            </p>
-          </div>
-
-          {openedDue.length > 0 && (
-            <ul className="duelist">
-              {openedDue.map((occurrence) => (
-                <DueRow
-                  key={occurrence.reminder.id}
-                  occurrence={occurrence}
-                  today={today}
-                  onPay={(o) => {
-                    setOpened(null);
-                    onPay(o);
-                  }}
-                  onRemove={onRemove}
-                />
-              ))}
-            </ul>
-          )}
-
-          <div className="row">
-            {onAdd !== undefined && (
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={() => {
-                  setOpened(null);
-                  onAdd(toDateKey(openedDate));
-                }}
-              >
-                Add a due date here
-              </button>
-            )}
-            <button type="button" className="btn btn-ghost" onClick={() => setOpened(null)}>
-              Close
-            </button>
-          </div>
-        </Sheet>
-      )}
     </div>
+  );
+}
+
+export type OpenDay = { dateKey: string; date: Date; due: readonly Occurrence[] };
+
+/**
+ * One opened day, for the column beside the calendar.
+ *
+ * Exported rather than drawn inside the calendar so the screen decides where
+ * it goes; the calendar only decides what is in it.
+ */
+export function DayPanel({
+  day,
+  onPay,
+  onRemove,
+  onAdd,
+  onClose,
+}: {
+  day: OpenDay;
+  onPay: (occurrence: Occurrence) => void;
+  onRemove: (id: string) => void;
+  onAdd?: (dateKey: string) => void;
+  onClose: () => void;
+}) {
+  const today = new Date();
+  const total = sumOf(day.due);
+
+  return (
+    <section className="daypanel" aria-label={longDate(day.date)}>
+      <div className="daypanel__head">
+        <div>
+          <p className="eyebrow">{weekdayOf(day.date)}</p>
+          <h3 className="daypanel__title">{longDate(day.date)}</h3>
+        </div>
+        <button type="button" className="iconbtn" aria-label="Close this day" onClick={onClose}>
+          <Cross />
+        </button>
+      </div>
+
+      <p className="daypanel__sub">
+        {day.due.length === 0
+          ? "Nothing due"
+          : `${day.due.length} ${day.due.length === 1 ? "thing" : "things"} due${
+              total > 0n ? ` · ${formatUsd(total)}` : ""
+            }`}
+      </p>
+
+      {day.due.length > 0 && (
+        <ul className="duelist">
+          {day.due.map((occurrence) => (
+            <DueRow
+              key={occurrence.reminder.id}
+              occurrence={occurrence}
+              today={today}
+              onPay={onPay}
+              onRemove={onRemove}
+            />
+          ))}
+        </ul>
+      )}
+
+      {onAdd !== undefined && (
+        <button
+          type="button"
+          className="btn btn-ghost btn-block btn-sm"
+          onClick={() => onAdd(day.dateKey)}
+        >
+          Add a due date here
+        </button>
+      )}
+    </section>
   );
 }
 
