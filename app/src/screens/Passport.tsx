@@ -262,18 +262,6 @@ export function PassportScreen({
                 emptyNote="Payments received at this address appear here."
               />
 
-              {ownRecord && sent !== null && (
-                <PaymentHistory
-                  payouts={sent}
-                  direction="sent"
-                  heading="Payments sent"
-                  description="What you have paid out. This half is yours alone — it is left off the record you share."
-                  viewAllUrl={sent.length > 0 ? routeHref("/books") : undefined}
-                  csvUrl={sent.length > 0 ? api.csvUrl(address) : undefined}
-                  emptyNote="Payments you send appear here, and on the recipient’s Passport."
-                />
-              )}
-
               {!shared && (
                 <div className="stack-sm">
                   <button type="button" className="btn btn-primary" onClick={() => void share()}>
@@ -294,6 +282,22 @@ export function PassportScreen({
                 </p>
               )}
             </>
+          )}
+
+          {/* Outside the branch above, which is about money received. Money
+              sent is a separate ledger, and hiding it behind an empty income
+              record left an account that had only ever paid people looking at
+              a page that said nothing and offered nowhere to go. */}
+          {ownRecord && sent !== null && (
+            <PaymentHistory
+              payouts={sent}
+              direction="sent"
+              heading="Payments sent"
+              description="What you have paid out. This half is yours alone — it is left off the record you share."
+              viewAllUrl={sent.length > 0 ? routeHref("/books") : undefined}
+              csvUrl={sent.length > 0 ? api.csvUrl(address) : undefined}
+              emptyNote="Payments you send appear here, and on the recipient’s Passport."
+            />
           )}
         </div>
       )}
