@@ -324,22 +324,47 @@ export function CTA({ account }: { account: StoredAccount | null }) {
   return (
     <section className="section--tight site-shell">
       <div className="cta">
-        <span className="eyebrow" style={{ color: "var(--on-night-soft)" }}>
-          Remi
-        </span>
-        <h2 style={{ marginTop: "0.8rem" }}>
-          Payroll that leaves the worker better off than a receipt.
-        </h2>
-        <p>
-          The payout is the wedge. The income record is the product. The underwriting is the company.
-        </p>
-        <div className="cta__actions">
-          <Button variant="accent" size="lg" href={account === null ? signInHref({ mode: "create" }) : "#/app"}>
-            {account === null ? "Set up with Face ID" : "Open your dashboard"}
-          </Button>
-          <Button variant="onnight" size="lg" href="https://github.com/Rohit-ATS/Remi">
-            Read the source
-          </Button>
+        <div className="cta__grid">
+          <div className="cta__copy">
+            <span className="eyebrow" style={{ color: "var(--on-night-soft)" }}>
+              Remi
+            </span>
+            <h2>
+              Payroll that leaves the worker better off than a receipt.
+            </h2>
+            <p>
+              The payout is the wedge. The income record is the product. The underwriting is the company.
+            </p>
+            <div className="cta__actions">
+              <Button variant="accent" size="lg" href={account === null ? signInHref({ mode: "create" }) : "#/app"}>
+                {account === null ? "Set up with Face ID" : "Open your dashboard"}
+              </Button>
+              <Button variant="onnight" size="lg" href="https://github.com/Rohit-ATS/Remi">
+                Read the source
+              </Button>
+            </div>
+          </div>
+
+          <aside className="cta-record" aria-label="Example verified income record">
+            <header className="cta-record__head">
+              <span>REMI PASSPORT</span>
+              <b><i /> Verified</b>
+            </header>
+            <div className="cta-record__amount">
+              <span>Income received</span>
+              <strong>$4,870<small>.00</small></strong>
+              <p>10 settled payouts · 2 attested clients</p>
+            </div>
+            <div className="cta-record__rows">
+              <div><span>Sep</span><i><i style={{ width: "89%" }} /></i><b>$975</b></div>
+              <div><span>Aug</span><i><i style={{ width: "86%" }} /></i><b>$950</b></div>
+              <div><span>Jul</span><i><i style={{ width: "86%" }} /></i><b>$950</b></div>
+            </div>
+            <footer className="cta-record__foot">
+              <span>Portable income history</span>
+              <b>Owned by the worker ↗</b>
+            </footer>
+          </aside>
         </div>
       </div>
     </section>
