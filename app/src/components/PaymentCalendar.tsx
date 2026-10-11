@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   byDay,
   daysUntil,
   describeWhen,
+  fromDateKey,
   occurrencesInMonth,
   toDateKey,
   type Occurrence,
@@ -19,21 +20,32 @@ const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
  * wrongly puts every date under the wrong weekday, which is the kind of error
  * that reads as fine until somebody pays rent on a Tuesday.
  *
- * Marked days are a filter, not just paint: picking one shows what falls on it,
- * and picking it again clears the filter.
+ * Every day is a target, not only the marked ones. A date that cannot be
+ * pressed has to be read against the list underneath to answer "what is on the
+ * 14th", and an empty day still has a useful answer — nothing is due, and here
+ * is where to put something.
+ *
+ * What a pressed day holds is reported upward rather than drawn here, so the
+ * screen can put it where there is room for it. On this one that is the column
+ * beside the calendar, which beats a sheet over the top of it: the grid stays
+ * visible, so the next day along is one click away instead of a dismissal and
+ * a click.
  */
 export function PaymentCalendar({
   reminders,
   onPay,
   onRemove,
+  onDayOpen,
 }: {
   reminders: readonly Reminder[];
   onPay: (occurrence: Occurrence) => void;
   onRemove: (id: string) => void;
+  /** The opened day, for whoever is going to render it. Null closes it. */
+  onDayOpen?: (day: OpenDay | null) => void;
 }) {
   const today = new Date();
   const [cursor, setCursor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
-  const [selected, setSelected] = useState<string | null>(null);
+  const [opened, setOpened] = useState<string | null>(null);
 
   const year = cursor.getFullYear();
   const month = cursor.getMonth();
@@ -46,16 +58,13 @@ export function PaymentCalendar({
 
   const firstWeekday = new Date(year, month, 1).getDay();
   const length = new Date(year, month + 1, 0).getDate();
-    // en-US to match money.ts, which formats every other date in the product.
+  // en-US to match money.ts, which formats every other date in the product.
   // Left to the system locale, this one card spoke a different language from
   // the receipts beside it.
   const monthName = cursor.toLocaleString("en-US", { month: "long" });
 
-  const shown =
-    selected === null ? occurrences : occurrences.filter((o) => toDateKey(o.date) === selected);
-
   const step = (by: number): void => {
-    setSelected(null);
+    setOpened(null);
     setCursor(new Date(year, month + by, 1));
   };
 
@@ -63,6 +72,24 @@ export function PaymentCalendar({
     (sum, o) => (o.reminder.amount === null ? sum : sum + BigInt(o.reminder.amount)),
     0n,
   );
+
+  // A day stays open across an edit, so removing one of three things leaves the
+  // other two on screen instead of closing the panel out from under the tap.
+  const openedDate = opened === null ? null : fromDateKey(opened);
+  const openedDue = opened === null ? [] : occurrences.filter((o) => toDateKey(o.date) === opened);
+
+  // Re-reported whenever the month's occurrences change, so an edit made from
+  // the panel is reflected in the panel rather than leaving it showing what
+  // was there before.
+  useEffect(() => {
+    if (onDayOpen === undefined) return;
+    onDayOpen(
+      openedDate === null ? null : { dateKey: toDateKey(openedDate), date: openedDate, due: openedDue },
+    );
+    return () => onDayOpen(null);
+    // openedDate and openedDue are derived from exactly these two.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opened, occurrences, onDayOpen]);
 
   return (
     <div className="calendar">
@@ -118,27 +145,21 @@ export function PaymentCalendar({
           const key = toDateKey(date);
           const due = marked.get(day) ?? [];
           const isToday = toDateKey(today) === key;
+          const overdue = due.length > 0 && daysUntil(date, today) < 0;
 
-          if (due.length === 0) {
-            return (
-              <span key={key} className="calendar__day" data-today={isToday}>
-                {day}
-              </span>
-            );
-          }
-
-          const overdue = daysUntil(date, today) < 0;
           return (
             <button
               key={key}
               type="button"
-              className="calendar__day calendar__day--due"
+              className={due.length > 0 ? "calendar__day calendar__day--due" : "calendar__day"}
               data-today={isToday}
               data-overdue={overdue}
-              data-selected={selected === key}
-              aria-pressed={selected === key}
-              title={due.map((o) => o.reminder.label).join(", ")}
-              onClick={() => setSelected(selected === key ? null : key)}
+              data-selected={opened === key}
+              aria-label={`${longDate(date)}${
+                due.length === 0 ? ", nothing due" : `, ${due.length} due`
+              }`}
+              title={due.length === 0 ? undefined : due.map((o) => o.reminder.label).join(", ")}
+              onClick={() => setOpened(opened === key ? null : key)}
             >
               {day}
               {due.length > 1 && <span className="calendar__count">{due.length}</span>}
@@ -149,55 +170,157 @@ export function PaymentCalendar({
 
       {occurrences.length === 0 ? (
         <p className="small faint calendar__note">
-          Nothing is due in {monthName}. Add a due date and it will be marked here.
+          Nothing is due in {monthName}. Pick a day to add one, or add one below.
         </p>
       ) : (
         <ul className="duelist">
-          {shown.map((occurrence) => {
-            const away = daysUntil(occurrence.date, today);
-            return (
-              <li key={`${occurrence.reminder.id}-${toDateKey(occurrence.date)}`}>
-                <span className="duelist__date">
-                  <b>{occurrence.date.getDate()}</b>
-                  <small>{occurrence.date.toLocaleString("en-US", { month: "short" })}</small>
-                </span>
-                <span className="duelist__what">
-                  <span className="duelist__label">{occurrence.reminder.label}</span>
-                  <span className="duelist__meta" data-overdue={away < 0}>
-                    {describeWhen(away)}
-                    {occurrence.reminder.repeat !== "none" && ` · ${occurrence.reminder.repeat}`}
-                    {occurrence.reminder.note !== "" && ` · ${occurrence.reminder.note}`}
-                  </span>
-                </span>
-                {occurrence.reminder.amount !== null && (
-                  <span className="figure duelist__amount">
-                    {formatUsd(occurrence.reminder.amount)}
-                  </span>
-                )}
-                <span className="duelist__actions">
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm"
-                    onClick={() => onPay(occurrence)}
-                  >
-                    Pay
-                  </button>
-                  <button
-                    type="button"
-                    className="iconbtn"
-                    aria-label={`Remove ${occurrence.reminder.label}`}
-                    onClick={() => onRemove(occurrence.reminder.id)}
-                  >
-                    <Cross />
-                  </button>
-                </span>
-              </li>
-            );
-          })}
+          {occurrences.map((occurrence) => (
+            <DueRow
+              key={`${occurrence.reminder.id}-${toDateKey(occurrence.date)}`}
+              occurrence={occurrence}
+              today={today}
+              onPay={onPay}
+              onRemove={onRemove}
+            />
+          ))}
         </ul>
       )}
+
     </div>
   );
+}
+
+export type OpenDay = { dateKey: string; date: Date; due: readonly Occurrence[] };
+
+/**
+ * One opened day, for the column beside the calendar.
+ *
+ * Exported rather than drawn inside the calendar so the screen decides where
+ * it goes; the calendar only decides what is in it.
+ */
+export function DayPanel({
+  day,
+  onPay,
+  onRemove,
+  onAdd,
+  onClose,
+}: {
+  day: OpenDay;
+  onPay: (occurrence: Occurrence) => void;
+  onRemove: (id: string) => void;
+  onAdd?: (dateKey: string) => void;
+  onClose: () => void;
+}) {
+  const today = new Date();
+  const total = sumOf(day.due);
+
+  return (
+    <section className="daypanel" aria-label={longDate(day.date)}>
+      <div className="daypanel__head">
+        <div>
+          <p className="eyebrow">{weekdayOf(day.date)}</p>
+          <h3 className="daypanel__title">{longDate(day.date)}</h3>
+        </div>
+        <button type="button" className="iconbtn" aria-label="Close this day" onClick={onClose}>
+          <Cross />
+        </button>
+      </div>
+
+      <p className="daypanel__sub">
+        {day.due.length === 0
+          ? "Nothing due"
+          : `${day.due.length} ${day.due.length === 1 ? "thing" : "things"} due${
+              total > 0n ? ` · ${formatUsd(total)}` : ""
+            }`}
+      </p>
+
+      {day.due.length > 0 && (
+        <ul className="duelist">
+          {day.due.map((occurrence) => (
+            <DueRow
+              key={occurrence.reminder.id}
+              occurrence={occurrence}
+              today={today}
+              onPay={onPay}
+              onRemove={onRemove}
+            />
+          ))}
+        </ul>
+      )}
+
+      {onAdd !== undefined && (
+        <button
+          type="button"
+          className="btn btn-ghost btn-block btn-sm"
+          onClick={() => onAdd(day.dateKey)}
+        >
+          Add a due date here
+        </button>
+      )}
+    </section>
+  );
+}
+
+/** One due thing, rendered the same in the month list and in a day. */
+function DueRow({
+  occurrence,
+  today,
+  onPay,
+  onRemove,
+}: {
+  occurrence: Occurrence;
+  today: Date;
+  onPay: (occurrence: Occurrence) => void;
+  onRemove: (id: string) => void;
+}) {
+  const away = daysUntil(occurrence.date, today);
+  return (
+    <li>
+      <span className="duelist__date">
+        <b>{occurrence.date.getDate()}</b>
+        <small>{occurrence.date.toLocaleString("en-US", { month: "short" })}</small>
+      </span>
+      <span className="duelist__what">
+        <span className="duelist__label">{occurrence.reminder.label}</span>
+        <span className="duelist__meta" data-overdue={away < 0}>
+          {describeWhen(away)}
+          {occurrence.reminder.repeat !== "none" && ` · ${occurrence.reminder.repeat}`}
+          {occurrence.reminder.note !== "" && ` · ${occurrence.reminder.note}`}
+        </span>
+      </span>
+      {occurrence.reminder.amount !== null && (
+        <span className="figure duelist__amount">{formatUsd(occurrence.reminder.amount)}</span>
+      )}
+      <span className="duelist__actions">
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => onPay(occurrence)}>
+          Pay
+        </button>
+        <button
+          type="button"
+          className="iconbtn"
+          aria-label={`Remove ${occurrence.reminder.label}`}
+          onClick={() => onRemove(occurrence.reminder.id)}
+        >
+          <Cross />
+        </button>
+      </span>
+    </li>
+  );
+}
+
+function sumOf(occurrences: readonly Occurrence[]): bigint {
+  return occurrences.reduce(
+    (sum, o) => (o.reminder.amount === null ? sum : sum + BigInt(o.reminder.amount)),
+    0n,
+  );
+}
+
+function longDate(date: Date): string {
+  return date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+}
+
+function weekdayOf(date: Date): string {
+  return date.toLocaleDateString("en-US", { weekday: "long" });
 }
 
 function Chevron({ direction }: { direction: "left" | "right" }) {

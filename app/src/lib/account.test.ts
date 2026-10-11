@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { clearDemoAccount, createDemoAccount, demoAccountsAllowed, withSession } from "./account.ts";
+import {
+  LOCAL_CHAIN_KEY,
+  clearDemoAccount,
+  createDemoAccount,
+  demoAccountsAllowed,
+  withSession,
+} from "./account.ts";
 
 const ACCOUNT_KEY = "remi.account.v1";
 const DEMO_KEY = "remi.demo-key.v1";
@@ -35,6 +41,16 @@ describe("demo accounts", () => {
     const testnet = createDemoAccount("Testnet demo", "testnet");
     expect(testnet).toMatchObject({ label: "Testnet demo", demo: true });
     expect(values.get(DEMO_KEY)).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it("uses the shared Hardhat demo account only on a local chain", () => {
+    const values = installStorage();
+    createDemoAccount("Local demo", "local", LOCAL_CHAIN_KEY);
+    expect(values.get(DEMO_KEY)).toBe(LOCAL_CHAIN_KEY);
+
+    clearDemoAccount();
+    createDemoAccount("Testnet demo", "testnet", LOCAL_CHAIN_KEY);
+    expect(values.get(DEMO_KEY)).not.toBe(LOCAL_CHAIN_KEY);
   });
 
   it("clears an existing demo key and blocks its mainnet signing path", async () => {

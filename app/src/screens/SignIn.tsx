@@ -4,11 +4,13 @@ import {
   createDemoAccount,
   demoAccountsAllowed,
   describeError,
+  LOCAL_CHAIN_KEY,
   signIn,
   type StoredAccount,
 } from "../lib/account.ts";
 import type { ServerConfig } from "../lib/api.ts";
 import { navigate, routeHref, signInHref } from "../lib/router.ts";
+import { unlockName } from "../lib/unlock.ts";
 import { AppHeader } from "../components/AppHeader.tsx";
 import { Check } from "../site/primitives.tsx";
 
@@ -42,6 +44,10 @@ export function SignIn({
   // and a filled field is faster to correct than an empty one to complete.
   const [name, setName] = useState(email === null ? "" : businessNameFrom(email));
   const demoAvailable = demoAccountsAllowed(config?.network);
+  const local = config?.network === "local";
+  // Whatever this device calls its unlock. A fingerprint reader runs the same
+  // ceremony a face does, and the button should not imply otherwise.
+  const unlock = unlockName();
 
   const run = async (which: "create" | "signin" | "demo"): Promise<void> => {
     setBusy(which);
@@ -52,7 +58,13 @@ export function SignIn({
           ? await createAccount(name.trim() || "My business")
           : which === "signin"
             ? await signIn()
-            : createDemoAccount(name.trim() || "Demo business", config?.network);
+            : createDemoAccount(
+                name.trim() || "Demo business",
+                config?.network,
+                // On a local chain, be the account `npm run demo` wrote its
+                // history for. Anywhere else, a fresh key of this browser's own.
+                local ? LOCAL_CHAIN_KEY : undefined,
+              );
       onSignedIn(account);
       navigate(next);
     } catch (caught) {
@@ -104,9 +116,9 @@ export function SignIn({
             {busy === (creating ? "create" : "signin") ? (
               <span className="spinner" />
             ) : creating ? (
-              "Set up with Face ID"
+              `Set up with ${unlock}`
             ) : (
-              "Continue with Face ID"
+              `Continue with ${unlock}`
             )}
           </button>
 
@@ -118,11 +130,11 @@ export function SignIn({
           </a>
         </div>
 
-        {/* The way in when Face ID is not on offer: a machine without a
-            platform authenticator, a browser whose password manager has no PRF
-            extension, or a demo on a borrowed laptop. It is a real account on
-            the same chain — only its key sits in this browser rather than
-            behind a face, which is why it says so plainly. */}
+        {/* The way in when no passkey is on offer at all: a machine without
+            a platform authenticator, a browser whose password manager has no
+            PRF extension, or a demo on a borrowed laptop. It is a real account
+            on the same chain — only its key sits in this browser rather than
+            behind a biometric, which is why it says so plainly. */}
         {demoAvailable && (
           <div className="card stack-sm">
             <button
@@ -131,11 +143,18 @@ export function SignIn({
               onClick={() => void run("demo")}
               disabled={busy !== null}
             >
-              {busy === "demo" ? <span className="spinner" /> : "Skip Face ID — open a demo account"}
+              {busy === "demo" ? (
+                <span className="spinner" />
+              ) : local ? (
+                "Open the local demo account"
+              ) : (
+                "Open a demo account instead"
+              )}
             </button>
             <p className="small faint" style={{ margin: 0 }}>
-              No passkey. The key is generated here and kept in this browser, so use it to look
-              around, not to hold real money.
+              {local
+                ? "No passkey. Opens the local chain's demo account, so anything `npm run demo` wrote is already there."
+                : "No passkey. The key is generated here and kept in this browser, so use it to look around, not to hold real money."}
             </p>
           </div>
         )}
@@ -147,7 +166,7 @@ export function SignIn({
             <Check /> No seed phrase, no extension, no custody account
           </li>
           <li>
-            <Check /> Both of your keys come back from the same Face ID on a new phone
+            <Check /> Both of your keys come back from the same passkey on a new device
           </li>
           <li>
             <Check /> Remi never holds a key and never takes custody of funds

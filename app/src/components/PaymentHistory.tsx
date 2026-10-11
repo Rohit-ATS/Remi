@@ -1,6 +1,8 @@
+import { useState } from "react";
 import type { Payout } from "../lib/api.ts";
 import { formatDate, formatUsd, shortAddress } from "../lib/money.ts";
 import { routeHref } from "../lib/router.ts";
+import { Sheet } from "../screens/Sheets.tsx";
 
 /**
  * Payment history, as a table.
@@ -25,6 +27,7 @@ export function PaymentHistory({
   viewAllUrl,
   csvUrl,
   emptyNote,
+  explorer,
 }: {
   payouts: Payout[];
   heading?: string;
@@ -40,8 +43,11 @@ export function PaymentHistory({
   viewAllUrl?: string | undefined;
   csvUrl?: string | undefined;
   emptyNote?: string;
+  /** Block explorer origin, when the network has one, for the transaction. */
+  explorer?: string | null;
 }) {
   const received = direction === "received";
+  const [open, setOpen] = useState<Payout | null>(null);
 
   return (
     <section className="history" aria-label={heading}>
@@ -114,13 +120,19 @@ export function PaymentHistory({
                       )}
                     </td>
                     <td className="history__action">
-                      <a
+                      {/* The whole receipt is already in this row's data, so
+                          leaving the table to read it costs a page load and
+                          the place in the list. It opens here instead, and
+                          the full page stays one click further on for a link
+                          worth sending someone. */}
+                      <button
+                        type="button"
                         className="iconbtn"
-                        href={routeHref(`/r/${payout.receipt_no}`)}
-                        aria-label={`Open receipt ${payout.receipt_no}`}
+                        aria-label={`Receipt ${payout.receipt_no}`}
+                        onClick={() => setOpen(payout)}
                       >
                         <ReceiptIcon />
-                      </a>
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -145,7 +157,91 @@ export function PaymentHistory({
           )}
         </div>
       )}
+      {open !== null && (
+        <ReceiptSheet
+          payout={open}
+          received={received}
+          explorer={explorer ?? null}
+          onClose={() => setOpen(null)}
+        />
+      )}
     </section>
+  );
+}
+
+/** One row's receipt, without leaving the table it was read from. */
+function ReceiptSheet({
+  payout,
+  received,
+  explorer,
+  onClose,
+}: {
+  payout: Payout;
+  received: boolean;
+  explorer: string | null;
+  onClose: () => void;
+}) {
+  const counterparty = received ? payout.payer : payout.payee;
+
+  return (
+    <Sheet label={`Receipt ${payout.receipt_no}`} dismissible onClose={onClose}>
+      <div className="stack-sm">
+        <p className="eyebrow">Receipt #{String(payout.receipt_no).padStart(4, "0")}</p>
+        <p className="receipt-amount">{formatUsd(payout.amount)}</p>
+        <p className="hushed" style={{ margin: 0 }}>
+          {received ? "from" : "to"}{" "}
+          {received ? shortAddress(payout.payer) : payout.label || shortAddress(payout.payee)}
+        </p>
+      </div>
+
+      <dl style={{ margin: 0 }}>
+        <div className="kv">
+          <dt>Date</dt>
+          <dd>{formatDate(payout.timestamp)}</dd>
+        </div>
+        <div className="kv">
+          <dt>{received ? "From" : "To"}</dt>
+          <dd className="mono">{shortAddress(counterparty)}</dd>
+        </div>
+        <div className="kv">
+          <dt>Category</dt>
+          <dd>{payout.category}</dd>
+        </div>
+        {payout.memo.trim() !== "" && (
+          <div className="kv">
+            <dt>For</dt>
+            <dd>{payout.memo}</dd>
+          </div>
+        )}
+        <div className="kv">
+          <dt>Status</dt>
+          <dd>Settled in block {payout.block_number}</dd>
+        </div>
+        <div className="kv">
+          <dt>Passport</dt>
+          <dd>{payout.passport_eligible ? "Counts toward the record" : "Off Passport"}</dd>
+        </div>
+        <div className="kv">
+          <dt>Transaction</dt>
+          <dd className="mono">
+            {explorer === null ? (
+              shortAddress(payout.tx_hash)
+            ) : (
+              <a href={`${explorer}/tx/${payout.tx_hash}`} target="_blank" rel="noreferrer">
+                {shortAddress(payout.tx_hash)}
+              </a>
+            )}
+          </dd>
+        </div>
+      </dl>
+
+      <a className="btn btn-accent btn-block" href={routeHref(`/r/${payout.receipt_no}`)}>
+        Open the full receipt
+      </a>
+      <button type="button" className="btn btn-ghost btn-block" onClick={onClose}>
+        Close
+      </button>
+    </Sheet>
   );
 }
 

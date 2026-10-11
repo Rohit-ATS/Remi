@@ -260,19 +260,8 @@ export function PassportScreen({
                     : "Everything you have been paid, each one backed by a receipt anyone you show it to can verify."
                 }
                 emptyNote="Payments received at this address appear here."
+                explorer={config?.explorer ?? null}
               />
-
-              {ownRecord && sent !== null && (
-                <PaymentHistory
-                  payouts={sent}
-                  direction="sent"
-                  heading="Payments sent"
-                  description="What you have paid out. This half is yours alone — it is left off the record you share."
-                  viewAllUrl={sent.length > 0 ? routeHref("/books") : undefined}
-                  csvUrl={sent.length > 0 ? api.csvUrl(address) : undefined}
-                  emptyNote="Payments you send appear here, and on the recipient’s Passport."
-                />
-              )}
 
               {!shared && (
                 <div className="stack-sm">
@@ -294,6 +283,23 @@ export function PassportScreen({
                 </p>
               )}
             </>
+          )}
+
+          {/* Outside the branch above, which is about money received. Money
+              sent is a separate ledger, and hiding it behind an empty income
+              record left an account that had only ever paid people looking at
+              a page that said nothing and offered nowhere to go. */}
+          {ownRecord && sent !== null && (
+            <PaymentHistory
+              payouts={sent}
+              direction="sent"
+              heading="Payments sent"
+              description="What you have paid out. This half is yours alone — it is left off the record you share."
+              viewAllUrl={sent.length > 0 ? routeHref("/books") : undefined}
+              csvUrl={sent.length > 0 ? api.csvUrl(address) : undefined}
+              emptyNote="Payments you send appear here, and on the recipient’s Passport."
+              explorer={config?.explorer ?? null}
+            />
           )}
         </div>
       )}
