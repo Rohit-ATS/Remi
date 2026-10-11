@@ -135,7 +135,7 @@
 
 .nav__panel {
   position: absolute;
-  top: calc(100% + 10px);
+  top: calc(100% + 6px);
   left: 0;
   min-width: 268px;
   background: var(--paper);
@@ -145,6 +145,7 @@
   display: grid;
   gap: 2px;
   box-shadow: var(--shadow-sm);
+  z-index: 55;
 }
 .nav__panel a {
   display: grid;

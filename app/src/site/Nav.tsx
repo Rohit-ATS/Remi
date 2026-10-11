@@ -27,27 +27,20 @@ export function AnnouncementBar() {
   );
 }
 
-function Dropdown({ item }: { item: NavItem }) {
-  const [open, setOpen] = useState(false);
+function Dropdown({
+  item,
+  open,
+  onToggle,
+  onClose,
+}: {
+  item: NavItem;
+  open: boolean;
+  onToggle: () => void;
+  onClose: () => void;
+}) {
   const ref = useRef<HTMLDivElement>(null);
-
-  // Close on an outside click or Escape, which is what a menu that opens on
-  // hover still needs for keyboard and touch users.
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (event: MouseEvent): void => {
-      if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false);
-    };
-    const onKey = (event: KeyboardEvent): void => {
-      if (event.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const panelId = `nav-menu-${item.label.toLowerCase().replace(/\s+/g, "-")}`;
 
   if (item.links === undefined) {
     return (
@@ -64,22 +57,35 @@ function Dropdown({ item }: { item: NavItem }) {
       className="nav__item"
       data-open={open}
       ref={ref}
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
+      onBlur={(event) => {
+        if (!ref.current?.contains(event.relatedTarget as Node | null)) onClose();
+      }}
     >
       <button
         className="nav__trigger"
         type="button"
         aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
+        aria-controls={panelId}
+        onClick={onToggle}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            onClose();
+            event.currentTarget.focus();
+          }
+          if (event.key === "ArrowDown" && !open) {
+            event.preventDefault();
+            onToggle();
+            requestAnimationFrame(() => panelRef.current?.querySelector<HTMLAnchorElement>("a")?.focus());
+          }
+        }}
       >
         {item.label}
         <Chevron />
       </button>
       {open && (
-        <div className="nav__panel">
+        <div className="nav__panel" id={panelId} ref={panelRef}>
           {item.links.map((link) => (
-            <a key={link.label} href={link.href}>
+            <a key={link.label} href={link.href} onClick={onClose}>
               <strong>{link.label}</strong>
               <span>{link.blurb}</span>
             </a>
@@ -93,6 +99,8 @@ function Dropdown({ item }: { item: NavItem }) {
 export function Nav({ account }: { account: StoredAccount | null }) {
   const [stuck, setStuck] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const navRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const onScroll = (): void => setStuck(window.scrollY > 4);
@@ -101,6 +109,25 @@ export function Nav({ account }: { account: StoredAccount | null }) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Dropdowns open deliberately on click rather than on hover: there is no
+  // cursor race over the small gap to the panel, and the same interaction works
+  // with touch and keyboard. Only one menu can be open at a time.
+  useEffect(() => {
+    if (openMenu === null) return;
+    const onDown = (event: PointerEvent): void => {
+      if (!navRef.current?.contains(event.target as Node)) setOpenMenu(null);
+    };
+    const onKey = (event: KeyboardEvent): void => {
+      if (event.key === "Escape") setOpenMenu(null);
+    };
+    document.addEventListener("pointerdown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [openMenu]);
+
   return (
     <header className="nav" data-stuck={stuck}>
       <div className="site-shell nav__inner">
@@ -108,9 +135,15 @@ export function Nav({ account }: { account: StoredAccount | null }) {
           <Wordmark />
         </a>
 
-        <nav className="nav__links" aria-label="Main">
+        <nav className="nav__links" aria-label="Main" ref={navRef}>
           {NAV.map((item) => (
-            <Dropdown key={item.label} item={item} />
+            <Dropdown
+              key={item.label}
+              item={item}
+              open={openMenu === item.label}
+              onToggle={() => setOpenMenu((current) => (current === item.label ? null : item.label))}
+              onClose={() => setOpenMenu(null)}
+            />
           ))}
         </nav>
 
