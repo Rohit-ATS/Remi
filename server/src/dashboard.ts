@@ -12,6 +12,7 @@ export type MonthPoint = { month: string; total: string; count: number };
 export type Dashboard = {
   /** YYYY-MM of the most recent activity, or the current month when there is none. */
   month: string;
+  previousMonth: string;
   monthTotal: string;
   previousMonthTotal: string;
   /** Signed difference against the previous month, in minor units. */
@@ -104,6 +105,7 @@ export function buildDashboard(
 
   return {
     month,
+    previousMonth: previous,
     monthTotal: monthTotal.toString(),
     previousMonthTotal: previousTotal.toString(),
     monthDelta: (monthTotal - previousTotal).toString(),

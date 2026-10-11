@@ -174,7 +174,7 @@ export function BooksScreen({
                         <td className="n">{formatUsd(row.total)}</td>
                         <td>
                           {row.over1099 ? (
-                            <span className="chip chip-solar">Required</span>
+                            <span className="chip chip-accent">Required</span>
                           ) : (
                             <span className="chip">Under</span>
                           )}

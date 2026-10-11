@@ -106,7 +106,7 @@ export function PassportScreen({
               <div className="panel stack">
                 <div className="spread">
                   <span className="eyebrow">Verified earnings</span>
-                  <span className="chip chip-solar">
+                  <span className="chip chip-accent">
                     {assessment.payoutCount} {assessment.payoutCount === 1 ? "record" : "records"}
                   </span>
                 </div>
@@ -177,7 +177,7 @@ export function PassportScreen({
                 </ul>
 
                 {assessment.signals.confidence >= 1 && (
-                  <div className="notice notice-solar" style={{ marginTop: "0.4rem" }}>
+                  <div className="notice notice-accent" style={{ marginTop: "0.4rem" }}>
                     An advance of up to{" "}
                     <strong>{formatUsd(assessment.advanceCeiling)}</strong> would be supportable
                     against this record. Remi does not lend — this is what the record is worth to

@@ -40,6 +40,21 @@ export type Books = {
   };
 };
 
+export type Dashboard = {
+  month: string;
+  previousMonth: string;
+  monthTotal: string;
+  previousMonthTotal: string;
+  monthDelta: string;
+  byMonth: { month: string; total: string; count: number }[];
+  recent: Payout[];
+  lifetime: { payouts: number; total: string; firstPayoutAt: number | null };
+  yearToDate: { year: string; total: string; contractorTotal: string };
+  people: { payees: number; contractors: number };
+  needs1099: { label: string; payee: string; total: string; count: number }[];
+  approaching1099: { label: string; payee: string; total: string; remaining: string }[];
+};
+
 export type Assessment = {
   totalEarned: string;
   payoutCount: number;
@@ -107,6 +122,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   config: () => request<ServerConfig>("/api/config"),
+
+  dashboard: (owner: string) => request<Dashboard>(`/api/dashboard?owner=${owner}`),
 
   payouts: (owner: string) => request<{ payouts: Payout[] }>(`/api/payouts?owner=${owner}`),
 

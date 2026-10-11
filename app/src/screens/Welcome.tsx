@@ -57,7 +57,7 @@ export function Welcome({
           </div>
           <button
             type="button"
-            className="btn btn-solar btn-block"
+            className="btn btn-accent btn-block"
             onClick={() => void run("create")}
             disabled={busy !== null}
           >

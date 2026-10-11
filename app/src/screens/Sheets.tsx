@@ -96,7 +96,7 @@ export function ConfirmSheet({
       </div>
 
       {needsApproval && (
-        <div className="notice notice-solar">
+        <div className="notice notice-accent">
           First payout from this account needs a one-time approval. Confirming will ask for Face ID
           twice: once to approve, once to pay.
         </div>
@@ -106,7 +106,7 @@ export function ConfirmSheet({
 
       <button
         type="button"
-        className="btn btn-solar btn-block"
+        className="btn btn-accent btn-block"
         onClick={onConfirm}
         disabled={busy}
       >

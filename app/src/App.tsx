@@ -3,7 +3,7 @@ import { api, apiIsUnconfigured, type ServerConfig } from "./lib/api.ts";
 import { getStoredAccount, signOut, type StoredAccount } from "./lib/account.ts";
 import { useRoute, navigate } from "./lib/router.ts";
 import { Welcome } from "./screens/Welcome.tsx";
-import { Home } from "./screens/Home.tsx";
+import { DashboardScreen } from "./screens/Dashboard.tsx";
 import { BooksScreen } from "./screens/Books.tsx";
 import { PassportScreen } from "./screens/Passport.tsx";
 import { ReceiptScreen } from "./screens/Receipt.tsx";
@@ -89,7 +89,7 @@ export function App() {
   return (
     <>
       {route.name === "home" && (
-        <Home config={config} account={account} onSignOut={onSignOut} />
+        <DashboardScreen config={config} account={account} onSignOut={onSignOut} />
       )}
       {route.name === "books" && <BooksScreen config={config} account={account} />}
       {route.name === "passport" && (
@@ -113,7 +113,7 @@ function Header({ account }: { account: StoredAccount | null }) {
 
 function TabBar({ active }: { active: string }) {
   const tabs = [
-    { href: "#/", name: "home", label: "Pay" },
+    { href: "#/", name: "home", label: "Home" },
     { href: "#/books", name: "books", label: "Books" },
     { href: "#/passport", name: "passport", label: "Passport" },
   ];

@@ -145,7 +145,7 @@ export function ReceiptScreen({
                 Every payout you receive through Remi adds to an income history you own — across
                 every client, not just this one. Set up with Face ID to claim it.
               </p>
-              <a className="btn btn-solar" href="#/">
+              <a className="btn btn-accent" href="#/">
                 Claim my Passport
               </a>
             </div>
