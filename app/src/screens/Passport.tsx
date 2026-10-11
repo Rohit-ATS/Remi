@@ -260,6 +260,7 @@ export function PassportScreen({
                     : "Everything you have been paid, each one backed by a receipt anyone you show it to can verify."
                 }
                 emptyNote="Payments received at this address appear here."
+                explorer={config?.explorer ?? null}
               />
 
               {!shared && (
@@ -297,6 +298,7 @@ export function PassportScreen({
               viewAllUrl={sent.length > 0 ? routeHref("/books") : undefined}
               csvUrl={sent.length > 0 ? api.csvUrl(address) : undefined}
               emptyNote="Payments you send appear here, and on the recipient’s Passport."
+              explorer={config?.explorer ?? null}
             />
           )}
         </div>
