@@ -1,10 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import type { Address } from "viem";
 import type { StoredAccount } from "../lib/account.ts";
 import { describeError } from "../lib/account.ts";
+import type { ServerConfig } from "../lib/api.ts";
 import { hasReminders, saveReminders, unlockReminders } from "../lib/vault.ts";
-import { newId, toDateKey, type Occurrence, type Reminder } from "../lib/reminders.ts";
-import { parseAmount } from "../lib/money.ts";
+import { canArm, newId, toDateKey, type Occurrence, type Reminder } from "../lib/reminders.ts";
+import { demoReminders } from "../lib/demoReminders.ts";
+import { enablePayouts, preflight, sendPayout } from "../lib/payouts.ts";
+import { formatUsd, parseAmount } from "../lib/money.ts";
+import { navigate } from "../lib/router.ts";
+import { unlockName } from "../lib/unlock.ts";
 import { DayPanel, PaymentCalendar, type OpenDay } from "./PaymentCalendar.tsx";
 
 /**
@@ -19,9 +25,12 @@ import { DayPanel, PaymentCalendar, type OpenDay } from "./PaymentCalendar.tsx";
  */
 export function DueDates({
   account,
+  config,
   onPay,
 }: {
   account: StoredAccount;
+  /** Needed to pay an armed reminder outright rather than via the composer. */
+  config: ServerConfig;
   onPay: (occurrence: Occurrence) => void;
 }) {
   const [reminders, setReminders] = useState<Reminder[] | null>(null);
@@ -32,6 +41,7 @@ export function DueDates({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [paying, setPaying] = useState<string | null>(null);
 
   const [label, setLabel] = useState("");
   const [amount, setAmount] = useState("");
@@ -44,6 +54,19 @@ export function DueDates({
   useEffect(() => {
     if (!hasReminders()) setReminders([]);
   }, []);
+
+  // A demo account arriving at an empty book gets one, so the calendar has
+  // something on it and both armed and unarmed states are visible without
+  // anyone configuring one first. Written once: a book that was emptied on
+  // purpose stays empty.
+  useEffect(() => {
+    if (reminders === null || reminders.length > 0) return;
+    if (account.demo !== true || hasReminders()) return;
+    void persist(demoReminders());
+    // persist is stable enough for this one-shot; re-running on its identity
+    // would refill a book the moment it was emptied.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reminders, account.demo]);
 
   useEffect(() => {
     setSlot(document.getElementById("day-detail"));
@@ -63,6 +86,14 @@ export function DueDates({
       setBusy(false);
     }
   }, [account]);
+
+  // Deferring the unlock exists to avoid spending a prompt nobody asked for.
+  // A demo account has no prompt to spend — its key is already here — so the
+  // button in front of the list would be asking for a click to do nothing.
+  useEffect(() => {
+    if (reminders !== null || account.demo !== true || !hasReminders()) return;
+    void unlock();
+  }, [reminders, account.demo, unlock]);
 
   const persist = async (next: Reminder[]): Promise<void> => {
     setBusy(true);
@@ -105,6 +136,60 @@ export function DueDates({
     setAdding(false);
   };
 
+  const setAutopay = (id: string, on: boolean): void => {
+    void persist(
+      (reminders ?? []).map((r) => (r.id === id ? { ...r, autopay: on } : r)),
+    );
+  };
+
+  /**
+   * Pays an armed reminder outright.
+   *
+   * This is the whole of what `autopay` means: no composer, no parsing, no
+   * typing — and no skipped verification either. `sendPayout` runs a passkey
+   * ceremony, so the money moves because somebody was here and proved it.
+   */
+  const payNow = async (occurrence: Occurrence): Promise<void> => {
+    const reminder = occurrence.reminder;
+    if (!canArm(reminder) || reminder.amount === null) return;
+
+    const payee = reminder.payee as Address;
+    const amount = BigInt(reminder.amount);
+
+    setPaying(reminder.id);
+    setError(null);
+    try {
+      let checked = await preflight(config, account.address, payee, amount);
+
+      // The first payout from an account has to approve the token before it
+      // can move it. The confirm sheet warns about the second prompt; here
+      // the two simply run back to back.
+      if (!checked.ok && checked.kind === "needs-approval") {
+        await enablePayouts(config);
+        checked = await preflight(config, account.address, payee, amount);
+      }
+
+      if (!checked.ok) {
+        setError(
+          checked.kind === "insufficient-funds"
+            ? `That needs ${formatUsd(amount)} and this account has ${formatUsd(checked.available)}.`
+            : checked.kind === "bad-address"
+              ? "This due date points at an address that is not valid."
+              : "That payout cannot go through yet.",
+        );
+        return;
+      }
+
+      const sent = await sendPayout(config, { payeeAddress: payee, amount });
+      setOpenDay(null);
+      if (sent.receiptNo !== null) navigate(`/r/${sent.receiptNo}`);
+    } catch (caught) {
+      setError(describeError(caught));
+    } finally {
+      setPaying(null);
+    }
+  };
+
   // Opening the form from a day should not make the person type that day back
   // in, so the date it was opened from is already filled.
   const addOn = (dateKey: string): void => {
@@ -135,6 +220,21 @@ export function DueDates({
     );
   }
 
+  const panelProps =
+    openDay === null
+      ? null
+      : {
+          day: openDay,
+          unlock: unlockName(),
+          paying,
+          onPay,
+          onPayNow: (occurrence: Occurrence) => void payNow(occurrence),
+          onArm: setAutopay,
+          onRemove: remove,
+          onAdd: addOn,
+          onClose: () => setOpenDay(null),
+        };
+
   return (
     <div className="stack-sm">
       {error !== null && <div className="notice notice-error">{error}</div>}
@@ -150,26 +250,11 @@ export function DueDates({
           stays readable and the next day along is one click rather than a
           dismissal and a click. Without that column — a narrow window — it
           falls back to sitting under the calendar. */}
-      {openDay !== null &&
+      {panelProps !== null &&
         (slot === null ? (
-          <DayPanel
-            day={openDay}
-            onPay={onPay}
-            onRemove={remove}
-            onAdd={addOn}
-            onClose={() => setOpenDay(null)}
-          />
+          <DayPanel {...panelProps} />
         ) : (
-          createPortal(
-            <DayPanel
-              day={openDay}
-              onPay={onPay}
-              onRemove={remove}
-              onAdd={addOn}
-              onClose={() => setOpenDay(null)}
-            />,
-            slot,
-          )
+          createPortal(<DayPanel {...panelProps} />, slot)
         ))}
 
       {adding ? (
@@ -254,8 +339,8 @@ export function DueDates({
       )}
 
       <p className="small faint">
-        A due date is a note. Nothing here moves money on its own — when one
-        arrives, Pay fills in the line and you still confirm it.
+        A due date is a note. Nothing here moves money on its own: Pay fills in the line and you
+        confirm it, and an armed one still asks for {unlockName()} on the day.
       </p>
     </div>
   );
