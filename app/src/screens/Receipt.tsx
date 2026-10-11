@@ -3,6 +3,7 @@ import { api, type Payout, type ServerConfig } from "../lib/api.ts";
 import type { StoredAccount } from "../lib/account.ts";
 import { formatDate, formatExact, formatUsd, shortAddress } from "../lib/money.ts";
 import { AppHeader } from "../components/AppHeader.tsx";
+import { unlockName } from "../lib/unlock.ts";
 import { routeHref } from "../lib/router.ts";
 
 /**
@@ -156,7 +157,7 @@ export function ReceiptScreen({
               <h2 style={{ color: "inherit" }}>This payout is already part of your record.</h2>
               <p className="hushed">
                 Every payout you receive through Remi adds to an income history you own — across
-                every client, not just this one. Set up with Face ID to claim it.
+                every client, not just this one. Set up with {unlockName()} to claim it.
               </p>
               <a className="btn btn-accent" href={routeHref("/")}>
                 Claim my Passport
