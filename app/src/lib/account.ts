@@ -1,7 +1,7 @@
 // The entire account layer. Mera only.
 //
 // No seed phrase, no browser extension, no custody backend, no second auth
-// provider. A passkey is the account, and the Face ID prompt the user sees is
+// provider. A passkey is the account, and the unlock prompt the user sees is
 // literally the transaction confirmation — there is no separate "approve" step
 // to explain, because the signing key only exists for the length of one call.
 //
@@ -303,7 +303,7 @@ export function describeError(error: unknown): string {
       case "PRF_UNAVAILABLE":
         return "This device's password manager can't create a Remi account. Try iCloud Keychain, 1Password, or Google Password Manager.";
       case "PASSKEY_OPERATION_FAILED":
-        return "Face ID was cancelled. Tap to try again.";
+        return "That was cancelled. Tap to try again.";
       case "CRYPTO_UNAVAILABLE":
         return "This browser is missing the security features Remi needs. Try Safari or Chrome.";
       case "DECRYPT_FAILED":
