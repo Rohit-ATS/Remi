@@ -1,19 +1,19 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api, type Dashboard, type ServerConfig } from "../lib/api.ts";
 import type { StoredAccount } from "../lib/account.ts";
 import { getBalance } from "../lib/payouts.ts";
 import { formatAmount, formatMonth, formatUsd } from "../lib/money.ts";
 import { AppHeader } from "../components/AppHeader.tsx";
-import { routeHref } from "../lib/router.ts";
+import { DueDates } from "../components/DueDates.tsx";
+import { navigate, routeHref } from "../lib/router.ts";
 
 /**
  * Home.
  *
- * Money first, then the ways to move it, then what moving it produced. The
- * balance and the pay shortcuts are the top of the screen because paying
- * someone is the one thing this app is for; the figures, the chart and the
- * activity below answer the questions that follow a payout rather than
- * competing with it.
+ * Money first, then what is owed, then what moving it produced. The balance
+ * is the top of the screen because paying someone is the one thing this app
+ * is for; the figures, the chart and the activity below answer the questions
+ * that follow a payout rather than competing with it.
  *
  * Every shortcut here writes a line into the composer instead of opening a
  * form of its own. The composer's parser is the only thing that turns words
@@ -61,20 +61,8 @@ export function DashboardScreen({
           return v > max ? v : max;
         }, 0n);
 
-  // The people paid most recently, each once. Paying the same contractor again
-  // next month is the common case, so they are the shortcuts worth having.
-  const payees = useMemo(() => {
-    if (data === null) return [];
-    const seen = new Map<string, { label: string; amount: string }>();
-    for (const payout of data.recent) {
-      const label = payout.label.trim();
-      if (label === "" || seen.has(label.toLowerCase())) continue;
-      seen.set(label.toLowerCase(), { label, amount: payout.amount });
-    }
-    return [...seen.values()].slice(0, 4);
-  }, [data]);
-
-  const last = data?.recent[0] ?? null;
+  // The payee shortcuts that used to live here went with the Pay card. They
+  // are on the payments screen, next to the composer that consumes them.
   const empty = data !== null && data.lifetime.payouts === 0;
 
   return (
@@ -146,51 +134,39 @@ export function DashboardScreen({
 
       <div className="homegrid">
         <div className="homemain">
-          <section className="block" aria-label="Pay">
+          {/* The calendar, not the Pay card. Paying starts from the button on
+              the balance above, and the payee shortcuts this card used to
+              hold are on the payments screen beside the composer that uses
+              them. What Home was missing was the other half: what is coming,
+              and when. */}
+          <section className="block" aria-label="Due dates">
             <div className="sectionhead">
-              <h2>Pay</h2>
-              {payees.length > 0 && <a href={routeHref("/books")}>Everyone</a>}
+              <h2>Due dates</h2>
+              <a href={routeHref("/pay")}>Pay someone</a>
             </div>
-
-            {payees.length > 0 && (
-              <div className="payrow">
-                {last !== null && last.label.trim() !== "" && (
-                  <a
-                    className="paytile paytile--repeat"
-                    href={payHref({
-                      to: last.label,
-                      amount: formatAmount(last.amount),
-                      memo: last.memo.trim() || last.category,
-                    })}
-                  >
-                    <span className="paytile__top">Repeat</span>
-                    <span className="paytile__name">{last.label}</span>
-                    <span className="paytile__sub">{formatUsd(last.amount)}</span>
-                  </a>
-                )}
-                {payees.map(({ label }) => (
-                  <a key={label} className="paytile" href={payHref({ to: label })}>
-                    <span className="paytile__avatar" aria-hidden="true">
-                      {label.slice(0, 1).toUpperCase()}
-                    </span>
-                    <span className="paytile__name">{label}</span>
-                    <span className="paytile__sub">Pay again</span>
-                  </a>
-                ))}
-              </div>
-            )}
-
-            <a className="btn btn-primary btn-block" href={routeHref("/pay")}>
-              Pay someone
-            </a>
-            <p className="small faint">
-              Sending, receiving and the receipts behind them all live on the payments screen.
-            </p>
+            <DueDates
+              account={account}
+              onPay={(occurrence) =>
+                navigate(
+                  payHref({
+                    to: occurrence.reminder.label,
+                    ...(occurrence.reminder.amount === null
+                      ? {}
+                      : { amount: formatAmount(occurrence.reminder.amount) }),
+                    memo: occurrence.reminder.note,
+                  }),
+                )
+              }
+            />
           </section>
 
         </div>
 
         <aside className="homeside">
+          {/* Where an opened calendar day lands, in place of the summary. */}
+          <div id="day-detail" />
+
+          <div className="homeside__summary">
           {data !== null && (
             <>
               <div className="factgrid">
@@ -287,6 +263,7 @@ export function DashboardScreen({
                 <span>Every settled payout</span>
               </a>
             )}
+          </div>
           </div>
         </aside>
       </div>
