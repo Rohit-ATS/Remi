@@ -656,6 +656,33 @@ td.n {
   justify-self: center;
 }
 
+/* Centred: the dialog lands in the middle and stops being a container. It
+   carries no panel of its own, so whatever it holds — a receipt, say — is the
+   thing on screen instead of a thing inside a tray. */
+.sheet-backdrop[data-placement="centre"] {
+  align-items: center;
+  padding: 24px 16px;
+  /* Darker than the bottom sheet's, because a centred dialog sits over the
+     middle of the content rather than along an edge of it. */
+  background: rgba(12, 10, 8, 0.62);
+}
+.sheet-backdrop[data-placement="centre"] .sheet {
+  background: none;
+  border-radius: 0;
+  padding: 0;
+  max-width: 26rem;
+  max-height: calc(100dvh - 48px);
+  animation: pop-in 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+/* The sheet brings no ground of its own here, so an outlined button would be
+   read through — and what is behind it is a table of numbers. */
+.sheet-backdrop[data-placement="centre"] .btn-ghost {
+  background: var(--card);
+}
+.sheet-backdrop[data-placement="centre"] .btn-ghost:hover {
+  background: var(--panel);
+}
+
 /* ---------- misc ---------- */
 
 .empty {
@@ -1912,6 +1939,42 @@ td.n {
    and the standing summary would otherwise push it out of sight. */
 .homeside:has(.daypanel) .homeside__summary {
   display: none;
+}
+
+.duelist__wrap {
+  display: grid;
+  gap: 0.2rem;
+}
+.duelist__toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  padding: 0.4rem 0;
+  border: 0;
+  background: none;
+  color: var(--hushed);
+  font-family: var(--body);
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+.duelist__toggle:hover {
+  color: var(--ink);
+}
+.duelist__caret {
+  display: inline-flex;
+  transition: transform 160ms ease;
+}
+.duelist__caret[data-open="true"] {
+  transform: rotate(90deg);
+}
+.duelist__count {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--faint);
 }
 
 .duelist {
