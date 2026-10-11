@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   byDay,
+  canArm,
   daysUntil,
   describeWhen,
   fromDateKey,
+  isPayable,
   occurrencesInMonth,
   toDateKey,
   type Occurrence,
@@ -200,13 +202,25 @@ export type OpenDay = { dateKey: string; date: Date; due: readonly Occurrence[] 
  */
 export function DayPanel({
   day,
+  unlock,
+  paying,
   onPay,
+  onPayNow,
+  onArm,
   onRemove,
   onAdd,
   onClose,
 }: {
   day: OpenDay;
+  /** What this device calls its unlock, for the button that will ask for it. */
+  unlock?: string;
+  /** The reminder currently being paid, if any. */
+  paying?: string | null;
   onPay: (occurrence: Occurrence) => void;
+  /** Pay an armed reminder outright, behind one verification. */
+  onPayNow?: (occurrence: Occurrence) => void;
+  /** Arm or disarm a reminder for one-gesture payment. */
+  onArm?: (id: string, on: boolean) => void;
   onRemove: (id: string) => void;
   onAdd?: (dateKey: string) => void;
   onClose: () => void;
@@ -241,7 +255,11 @@ export function DayPanel({
               key={occurrence.reminder.id}
               occurrence={occurrence}
               today={today}
+              unlock={unlock}
+              paying={paying ?? null}
               onPay={onPay}
+              onPayNow={onPayNow}
+              onArm={onArm}
               onRemove={onRemove}
             />
           ))}
@@ -265,15 +283,29 @@ export function DayPanel({
 function DueRow({
   occurrence,
   today,
+  unlock,
+  paying = null,
   onPay,
+  onPayNow,
+  onArm,
   onRemove,
 }: {
   occurrence: Occurrence;
   today: Date;
+  unlock?: string;
+  paying?: string | null;
   onPay: (occurrence: Occurrence) => void;
+  onPayNow?: (occurrence: Occurrence) => void;
+  onArm?: (id: string, on: boolean) => void;
   onRemove: (id: string) => void;
 }) {
   const away = daysUntil(occurrence.date, today);
+  const reminder = occurrence.reminder;
+  const armable = onArm !== undefined && canArm(reminder);
+  const armed = reminder.autopay === true && canArm(reminder);
+  const payable = onPayNow !== undefined && isPayable(occurrence, today);
+  const busy = paying === reminder.id;
+
   return (
     <li>
       <span className="duelist__date">
@@ -292,18 +324,63 @@ function DueRow({
         <span className="figure duelist__amount">{formatUsd(occurrence.reminder.amount)}</span>
       )}
       <span className="duelist__actions">
-        <button type="button" className="btn btn-ghost btn-sm" onClick={() => onPay(occurrence)}>
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm"
+          disabled={busy}
+          onClick={() => onPay(occurrence)}
+        >
           Pay
         </button>
         <button
           type="button"
           className="iconbtn"
-          aria-label={`Remove ${occurrence.reminder.label}`}
-          onClick={() => onRemove(occurrence.reminder.id)}
+          aria-label={`Remove ${reminder.label}`}
+          disabled={busy}
+          onClick={() => onRemove(reminder.id)}
         >
           <Cross />
         </button>
       </span>
+
+      {/* Arming is per reminder and lives with it, because what is being
+          agreed to is about this payment and not about the day. */}
+      {armable && (
+        <span className="autopay">
+          <label className="autopay__toggle">
+            <input
+              type="checkbox"
+              checked={armed}
+              disabled={busy}
+              onChange={(event) => onArm(reminder.id, event.target.checked)}
+            />
+            <span>Auto pay</span>
+          </label>
+
+          <span className="autopay__note">
+            {armed
+              ? payable
+                ? `Ready — asks for ${unlock ?? "your passkey"}.`
+                : `Armed. One tap on the day, still behind ${unlock ?? "your passkey"}.`
+              : "Off. Paying goes through the composer."}
+          </span>
+
+          {payable && (
+            <button
+              type="button"
+              className="btn btn-accent btn-block btn-sm"
+              disabled={busy}
+              onClick={() => onPayNow(occurrence)}
+            >
+              {busy ? (
+                <span className="spinner" />
+              ) : (
+                `Pay ${formatUsd(reminder.amount ?? "0")} with ${unlock ?? "your passkey"}`
+              )}
+            </button>
+          )}
+        </span>
+      )}
     </li>
   );
 }
