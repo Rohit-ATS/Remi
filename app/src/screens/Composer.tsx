@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type AssistantAnswer, type ServerConfig } from "../lib/api.ts";
 import { describeError, type StoredAccount } from "../lib/account.ts";
 import { parsePaymentIntent } from "../lib/intent.ts";
@@ -28,12 +28,22 @@ export function Composer({
   config,
   account,
   onSent,
+  draft,
 }: {
   config: ServerConfig;
   account: StoredAccount;
   onSent: () => void;
+  /**
+   * A line put in the box from outside — the pay shortcuts on the dashboard.
+   * The counter is what makes it land: picking the same payee twice should fill
+   * the box twice, and comparing text alone would silently ignore the second.
+   */
+  draft?: { text: string; memo?: string; nonce: number } | undefined;
 }) {
   const [text, setText] = useState("");
+  const [memo, setMemo] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const filled = useRef(0);
   const [book, setBook] = useState<PayeeEntry[] | null>(null);
   const [parseReason, setParseReason] = useState<string | null>(null);
 
@@ -46,6 +56,21 @@ export function Composer({
   const [asking, setAsking] = useState(false);
   const [answer, setAnswer] = useState<AssistantAnswer | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (draft === undefined || draft.nonce === filled.current) return;
+    filled.current = draft.nonce;
+    setText(draft.text);
+    setMemo(draft.memo ?? "");
+    // Land the caret at the end, so a shortcut that stops at "Pay Maria " is a
+    // starting point rather than something to clear.
+    const input = inputRef.current;
+    if (input !== null) {
+      input.focus();
+      input.setSelectionRange(draft.text.length, draft.text.length);
+      input.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+  }, [draft]);
 
   const openConfirm = useCallback(
     async (next: PendingPayout): Promise<void> => {
@@ -74,15 +99,22 @@ export function Composer({
   );
 
   const route = useCallback(
-    async (input: string): Promise<void> => {
-      const parsed = parsePaymentIntent(input);
+    async (line: string, description: string): Promise<void> => {
+      // The parser reads one sentence, and a trailing "for ..." is how it has
+      // always taken a memo — so the two fields are joined into that sentence
+      // rather than the parser learning about fields. One grammar, one path to
+      // money, and the description still lands on the receipt.
+      const parsed = parsePaymentIntent(joinIntent(line, description));
       setAnswer(null);
 
       if (!parsed.ok) {
         setParseReason(parsed.reason);
         setAsking(true);
         try {
-          setAnswer(await api.ask(account.address, input));
+          // A question is whatever was typed in the first field. The
+          // description belongs to a payout, so appending it here would only
+          // garble the question.
+          setAnswer(await api.ask(account.address, line));
         } catch (caught) {
           setAnswer({
             answer:
@@ -138,10 +170,16 @@ export function Composer({
     [account, book, openConfirm],
   );
 
+  // Dictation produces a whole sentence, memo and all, so it goes to the first
+  // field and routes exactly as a typed sentence would.
   const speech = useSpeech((transcript) => {
     setText(transcript);
-    void route(transcript);
+    void route(transcript, memo);
   });
+
+  // Which of the two things the button will do, decided by the same parser
+  // that will do it. The label is never a guess.
+  const sends = text.trim() === "" || parsePaymentIntent(joinIntent(text, memo)).ok;
 
   const onSavePayee = async (entry: PayeeEntry): Promise<void> => {
     setBusy(true);
@@ -176,6 +214,7 @@ export function Composer({
 
       setPending(null);
       setText("");
+      setMemo("");
       // The indexer polls, but a nudge makes the receipt appear immediately.
       await api.reindex().catch(() => undefined);
       onSent();
@@ -195,34 +234,55 @@ export function Composer({
         className="composer"
         onSubmit={(event) => {
           event.preventDefault();
-          if (text.trim() !== "") void route(text);
+          if (text.trim() !== "") void route(text, memo);
         }}
       >
-        <div className="inputrow">
+        <div className="field">
+          <label htmlFor="composer-line">Who and how much</label>
+          <div className="inputrow">
+            <input
+              id="composer-line"
+              ref={inputRef}
+              value={text}
+              onChange={(event) => setText(event.target.value)}
+              placeholder="Pay Maria four hundred dollars"
+              autoComplete="off"
+            />
+            {speech.supported && (
+              <button
+                type="button"
+                className="mic"
+                data-listening={speech.listening}
+                aria-label={speech.listening ? "Stop listening" : "Speak"}
+                onClick={() => (speech.listening ? speech.stop() : speech.start())}
+              >
+                {speech.listening ? "■" : "●"}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* A question has nothing to describe, so the field steps back rather
+            than disappearing — a box that comes and goes under the cursor is
+            worse than one that dims. */}
+        <div className="field" data-muted={!sends}>
+          <label htmlFor="composer-memo">Description</label>
           <input
-            value={text}
-            onChange={(event) => setText(event.target.value)}
-            placeholder="Pay Maria four hundred dollars for October"
-            aria-label="Pay someone, or ask about your books"
+            id="composer-memo"
+            value={memo}
+            onChange={(event) => setMemo(event.target.value)}
+            placeholder="October retainer"
             autoComplete="off"
           />
-          {speech.supported && (
-            <button
-              type="button"
-              className="mic"
-              data-listening={speech.listening}
-              aria-label={speech.listening ? "Stop listening" : "Speak"}
-              onClick={() => (speech.listening ? speech.stop() : speech.start())}
-            >
-              {speech.listening ? "■" : "●"}
-            </button>
-          )}
         </div>
+
         <button type="submit" className="btn btn-primary btn-block" disabled={text.trim() === ""}>
-          {asking ? <span className="spinner" /> : "Go"}
+          {asking ? <span className="spinner" /> : sends ? "Send" : "Ask"}
         </button>
         <p className="small faint">
-          Say who and how much to pay, or ask a question about your books.
+          {sends
+            ? "The description becomes the memo on the receipt and the line in your books."
+            : "Say who and how much to pay, or ask a question about your books."}
         </p>
       </form>
 
@@ -303,4 +363,17 @@ export function Composer({
       )}
     </>
   );
+}
+
+/**
+ * The two fields as one sentence.
+ *
+ * A line that already carries its own "for ..." keeps it: re-stating the memo
+ * would leave the parser reading "for October for October".
+ */
+function joinIntent(line: string, description: string): string {
+  const head = line.trim();
+  const tail = description.trim();
+  if (tail === "" || /\sfor\s/i.test(head)) return head;
+  return `${head} for ${tail}`;
 }

@@ -3,6 +3,7 @@ import { api, apiIsUnconfigured, type ServerConfig } from "./lib/api.ts";
 import { getStoredAccount, signOut, type StoredAccount } from "./lib/account.ts";
 import { GATED, navigate, signInHref, useRoute, useScrollReset, type Route } from "./lib/router.ts";
 import { AppHeader } from "./components/AppHeader.tsx";
+import { SideNav, TabBar } from "./components/Nav.tsx";
 import { Landing } from "./screens/Landing.tsx";
 import { SignIn } from "./screens/SignIn.tsx";
 import { DashboardScreen } from "./screens/Dashboard.tsx";
@@ -104,24 +105,30 @@ export function App() {
     return <Loading config={config} account={account} />;
   }
 
+  // One frame around every signed-in screen: a rail on a desktop, a tab bar on
+  // a phone, and the screen itself in between. CSS decides which navigation is
+  // showing, so both are always in the markup and neither needs measuring.
   return (
-    <>
-      {route.name === "home" && (
-        <DashboardScreen config={config} account={account} onSignOut={onSignOut} />
-      )}
-      {route.name === "books" && (
-        <BooksScreen config={config} account={account} onSignOut={onSignOut} />
-      )}
-      {route.name === "passport" && (
-        <PassportScreen
-          address={account.address}
-          config={config}
-          account={account}
-          onSignOut={onSignOut}
-        />
-      )}
+    <div className="appframe">
+      <SideNav active={route.name} config={config} account={account} onSignOut={onSignOut} />
+      <div className="appframe__body">
+        {route.name === "home" && (
+          <DashboardScreen config={config} account={account} onSignOut={onSignOut} />
+        )}
+        {route.name === "books" && (
+          <BooksScreen config={config} account={account} onSignOut={onSignOut} />
+        )}
+        {route.name === "passport" && (
+          <PassportScreen
+            address={account.address}
+            config={config}
+            account={account}
+            onSignOut={onSignOut}
+          />
+        )}
+      </div>
       <TabBar active={route.name} />
-    </>
+    </div>
   );
 }
 
@@ -208,25 +215,3 @@ function ServerMissing({
   );
 }
 
-function TabBar({ active }: { active: string }) {
-  const tabs = [
-    { href: "#/app", name: "home", label: "Home" },
-    { href: "#/books", name: "books", label: "Books" },
-    { href: "#/passport", name: "passport", label: "Passport" },
-  ];
-
-  return (
-    <nav className="tabs" aria-label="Sections">
-      {tabs.map((tab) => (
-        <a
-          key={tab.name}
-          href={tab.href}
-          {...(active === tab.name ? { "aria-current": "page" as const } : {})}
-        >
-          <span className="pip" aria-hidden="true" />
-          {tab.label}
-        </a>
-      ))}
-    </nav>
-  );
-}

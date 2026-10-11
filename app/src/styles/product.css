@@ -55,44 +55,185 @@
 
 /* ---------- tab bar ---------- */
 
+/* The bar spans the window so it still reads as the floor of the page, but the
+   tabs inside it hold the same 30rem column as .shell. Left full-bleed, three
+   labels on a wide monitor sit marooned at the far edges of an empty band and
+   stop looking like one control. */
+
 .tabs {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
-  background: var(--card);
+  background: color-mix(in srgb, var(--card) 86%, transparent);
+  backdrop-filter: blur(14px) saturate(1.3);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
   border-top: 1px solid var(--rule);
-  display: flex;
   padding-bottom: env(safe-area-inset-bottom, 0px);
   z-index: 20;
+  animation: tabs-rise 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-.tabs a {
-  flex: 1;
+
+/* No backdrop-filter means the blur would simply do nothing and leave the bar
+   translucent over scrolling content, so those browsers get it opaque. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .tabs {
+    background: var(--card);
+  }
+}
+
+.tabs__row {
+  position: relative;
+  max-width: 30rem;
+  margin-inline: auto;
+  padding-inline: 20px;
+  display: grid;
+  grid-template-columns: repeat(var(--tab-count), 1fr);
+}
+
+/* The travelling mark. The track is one column wide and steps a whole column
+   at a time, so the arithmetic stays independent of how many tabs there are.
+   The easing overshoots by a hair and settles — enough to read as movement
+   with weight, short of the bounce that would make a finance product look
+   playful. */
+.tabs__indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc((100% - 40px) / var(--tab-count));
+  margin-left: 20px;
+  height: 2px;
+  display: flex;
+  justify-content: center;
+  transform: translateX(calc(var(--tab-active) * 100%));
+  transition: transform 460ms cubic-bezier(0.32, 1.45, 0.52, 1), opacity 200ms ease;
+  pointer-events: none;
+}
+.tabs__indicator[data-visible="false"] {
+  opacity: 0;
+}
+.tabs__indicator::before {
+  content: "";
+  width: 1.6rem;
+  height: 2px;
+  border-radius: 0 0 2px 2px;
+  background: var(--accent);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.tab {
+  position: relative;
   min-height: var(--tap);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.1rem;
-  padding-block: 0.5rem;
+  gap: 0.25rem;
+  padding-block: 0.6rem 0.55rem;
   font-family: var(--mono);
   font-size: 0.68rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--faint);
   text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 200ms ease;
 }
-.tabs a[aria-current="page"] {
+
+/* A wash that fades in behind the active tab. It sits under the content and
+   stops short of the edges so two neighbouring tabs never look joined. */
+.tab::before {
+  content: "";
+  position: absolute;
+  inset: 0.3rem 0.4rem;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 220ms ease, transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+.tab__icon,
+.tab__label {
+  position: relative;
+}
+.tab__icon {
+  display: flex;
+  transform: translateY(1px) scale(0.94);
+  opacity: 0.75;
+  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1), opacity 200ms ease;
+}
+
+.tab:hover {
+  color: var(--hushed);
+}
+.tab:hover .tab__icon {
+  transform: translateY(-1px) scale(1);
+  opacity: 1;
+}
+.tab:active .tab__icon {
+  transform: translateY(0) scale(0.9);
+  transition-duration: 90ms;
+}
+
+.tab[aria-current="page"] {
   color: var(--ink);
 }
-.tabs a[aria-current="page"] .pip {
-  background: var(--accent);
+.tab[aria-current="page"]::before {
+  opacity: 1;
+  transform: scale(1);
 }
-.tabs .pip {
-  width: 1.2rem;
-  height: 2px;
-  border-radius: 1px;
-  background: transparent;
+.tab[aria-current="page"] .tab__icon {
+  color: var(--accent);
+  opacity: 1;
+  /* Runs each time a tab becomes the current one, because that is when the
+     element starts matching this selector. */
+  animation: tab-pop 420ms cubic-bezier(0.32, 1.45, 0.52, 1) both;
+}
+
+.tab:focus-visible {
+  outline: none;
+}
+.tab:focus-visible::before {
+  opacity: 1;
+  transform: scale(1);
+  box-shadow: 0 0 0 2px var(--accent-ring);
+}
+
+@keyframes tabs-rise {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes tab-pop {
+  0% {
+    transform: translateY(1px) scale(0.94);
+  }
+  55% {
+    transform: translateY(-2px) scale(1.12);
+  }
+  100% {
+    transform: translateY(-1px) scale(1);
+  }
+}
+
+/* The global reduce block collapses durations, which leaves the indicator
+   jumping to its column — correct — but a transform that overshoots would
+   still land a frame off, so the moving parts are pinned to their end state. */
+@media (prefers-reduced-motion: reduce) {
+  .tabs {
+    animation: none;
+  }
+  .tab[aria-current="page"] .tab__icon {
+    animation: none;
+    transform: translateY(-1px) scale(1);
+  }
 }
 
 /* ---------- type utilities ---------- */
@@ -127,6 +268,15 @@
 .field {
   display: grid;
   gap: 0.35rem;
+}
+/* Still usable, just plainly not what the button is about to act on. */
+.field[data-muted="true"] {
+  opacity: 0.55;
+  transition: opacity 200ms ease;
+}
+.field[data-muted="false"] {
+  opacity: 1;
+  transition: opacity 200ms ease;
 }
 .field label {
   font-family: var(--mono);
@@ -749,4 +899,630 @@ td.n {
   flex: none;
   margin-top: 4px;
   color: var(--accent);
+}
+
+/* ---------- app frame ---------- */
+
+/* Two navigations, one of which is always hidden. Below the breakpoint the
+   bottom tab bar is the navigation and the rail is gone; above it the rail
+   takes over and the bar goes, because three labels stretched across a desktop
+   window stop reading as one control. */
+
+.appframe {
+  min-height: 100dvh;
+}
+
+.rail {
+  display: none;
+}
+
+@media (min-width: 60rem) {
+  .appframe {
+    display: grid;
+    grid-template-columns: 17rem minmax(0, 1fr);
+  }
+  .appframe__body {
+    min-width: 0;
+  }
+
+  .rail {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    gap: 1.6rem;
+    padding: 1.5rem 1.1rem;
+    border-right: 1px solid var(--rule);
+    background: var(--canvas);
+  }
+
+  /* The bar is for thumbs. There is no thumb here. */
+  .tabs {
+    display: none;
+  }
+
+  /* The rail already shows the wordmark, the network and the account, so the
+     per-screen top bar would be the same chrome twice. */
+  .appframe .topbar {
+    display: none;
+  }
+}
+
+.rail__mark {
+  display: inline-flex;
+  padding-inline: 0.55rem;
+  text-decoration: none;
+  color: inherit;
+}
+.rail__mark .wordmark {
+  font-size: 1.3rem;
+}
+
+.rail__sections {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.railitem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 0.55rem;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  color: var(--hushed);
+  transition: color 180ms ease, background 180ms ease;
+}
+/* The accent edge grows from nothing rather than blinking on, which is what
+   makes moving between sections feel continuous. */
+.railitem::before {
+  content: "";
+  position: absolute;
+  left: -1.1rem;
+  top: 50%;
+  width: 2px;
+  height: 0;
+  border-radius: 0 2px 2px 0;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
+  transform: translateY(-50%);
+  transition: height 260ms cubic-bezier(0.32, 1.45, 0.52, 1);
+}
+.railitem:hover {
+  color: var(--ink);
+  background: var(--panel);
+}
+.railitem[aria-current="page"] {
+  color: var(--ink);
+  background: var(--accent-soft);
+}
+.railitem[aria-current="page"]::before {
+  height: 1.6rem;
+}
+.railitem[aria-current="page"] .railitem__icon {
+  color: var(--accent);
+}
+.railitem__icon {
+  display: flex;
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.railitem:hover .railitem__icon {
+  transform: translateX(1px);
+}
+.railitem__text {
+  display: grid;
+  min-width: 0;
+}
+.railitem__text b {
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+.railitem__text small {
+  font-size: 0.74rem;
+  color: var(--faint);
+}
+
+.rail__foot {
+  margin-top: auto;
+  display: grid;
+  gap: 0.6rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--rule);
+}
+.railaccount {
+  display: grid;
+  padding-inline: 0.55rem;
+  min-width: 0;
+}
+.railaccount__label {
+  font-weight: 500;
+  font-size: 0.92rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.railaccount__addr {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--faint);
+}
+.railaccount__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  padding-inline: 0.55rem;
+}
+
+/* ---------- home ---------- */
+
+.shell--home {
+  max-width: 34rem;
+}
+@media (min-width: 60rem) {
+  .shell--home {
+    max-width: 66rem;
+    padding-block: 2rem 3rem;
+    padding-inline: var(--gutter);
+  }
+}
+
+.homehead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.homehead h1 {
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  letter-spacing: -0.02em;
+  margin-top: 0.15rem;
+}
+
+/* The balance. The one figure the screen is built around, so it gets a surface
+   of its own and the two actions that act on it. */
+.balance {
+  display: grid;
+  gap: 1.1rem;
+  padding: 1.3rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(120% 140% at 0% 0%, var(--accent-soft) 0%, transparent 58%),
+    var(--card);
+  box-shadow: var(--shadow-sm);
+  animation: rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.balance__main {
+  display: grid;
+  gap: 0.3rem;
+}
+.balance__amount {
+  font-size: clamp(2.4rem, 9vw, 3.4rem);
+  letter-spacing: -0.045em;
+  line-height: 1;
+}
+/* A figure still loading should not read as a figure. */
+.balance__amount[data-pending="true"] {
+  color: var(--faint);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+.balance__meta {
+  font-size: 0.86rem;
+  color: var(--hushed);
+}
+.balance__actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.balance__actions .btn {
+  flex: 1;
+  min-width: 10rem;
+}
+
+@media (min-width: 40rem) {
+  .balance {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+  .balance__actions {
+    flex-wrap: nowrap;
+  }
+  .balance__actions .btn {
+    flex: none;
+    min-width: 0;
+  }
+}
+
+/* Two columns once there is room for them: what you do on the left, what it
+   added up to on the right. */
+.homegrid {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.homemain,
+.homeside {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+  min-width: 0;
+}
+@media (min-width: 60rem) {
+  .homegrid {
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: 1.25rem;
+    align-items: start;
+  }
+}
+
+.block {
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  padding: 1.1rem;
+  display: grid;
+  gap: 0.75rem;
+  animation: rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 60ms;
+}
+.block .sectionhead {
+  margin-bottom: 0;
+}
+
+/* ---------- pay shortcuts ---------- */
+
+/* A row of the people most recently paid. Each one writes a line into the
+   composer below rather than opening a second way to send money. */
+.payrow {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-inline: -1.1rem;
+  padding-inline: 1.1rem;
+  padding-bottom: 0.2rem;
+  scroll-snap-type: x proximity;
+}
+.payrow::-webkit-scrollbar {
+  display: none;
+}
+
+.paytile {
+  flex: 0 0 auto;
+  width: 7.5rem;
+  scroll-snap-align: start;
+  display: grid;
+  gap: 0.1rem;
+  justify-items: start;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--canvas);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), border-color 180ms ease,
+    box-shadow 220ms ease;
+}
+.paytile:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  box-shadow: var(--shadow-sm);
+}
+.paytile:active {
+  transform: translateY(0) scale(0.98);
+  transition-duration: 90ms;
+}
+.paytile:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+.paytile__avatar {
+  display: grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  margin-bottom: 0.3rem;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 0.82rem;
+}
+.paytile__top {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.9rem;
+}
+.paytile__name {
+  font-weight: 500;
+  font-size: 0.92rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.paytile__sub {
+  font-size: 0.75rem;
+  color: var(--hushed);
+}
+.paytile--repeat {
+  background: var(--accent-soft);
+  border-color: transparent;
+}
+
+/* On a phone the row is a scroller, which is the right gesture there. On a
+   desktop there is no swipe, and a tile sliced off at the card's edge reads as
+   a rendering fault rather than an invitation, so the row wraps instead. */
+@media (min-width: 60rem) {
+  .payrow {
+    flex-wrap: wrap;
+    overflow: visible;
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+  .paytile {
+    flex: 1 1 7.5rem;
+    width: auto;
+  }
+}
+
+/* ---------- activity rows ---------- */
+
+.rowlink {
+  padding-inline: 0.4rem;
+  margin-inline: -0.4rem;
+  border-radius: var(--radius-sm);
+  animation: slide-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition: background 160ms ease;
+}
+.rowlink:hover {
+  background: var(--panel);
+}
+.rowlink__avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  margin-right: -0.4rem;
+  border-radius: 50%;
+  background: var(--panel-deep);
+  color: var(--hushed);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+}
+/* The row is a flex container whose middle cell should take the slack. */
+.rowlink > span:nth-child(2) {
+  margin-right: auto;
+  min-width: 0;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* Entrance animations are the first thing to go: arriving at a screen that
+   assembles itself is exactly what this setting asks us not to do. */
+@media (prefers-reduced-motion: reduce) {
+  .balance,
+  .block,
+  .rowlink {
+    animation: none;
+  }
+  .balance__amount[data-pending="true"] {
+    animation: none;
+  }
+}
+
+/* ---------- payment history ---------- */
+
+.history {
+  display: grid;
+  gap: 1rem;
+}
+.history__head {
+  display: grid;
+  justify-items: start;
+  gap: 0.5rem;
+}
+.history__head h2 {
+  font-size: clamp(1.3rem, 3vw, 1.7rem);
+  letter-spacing: -0.02em;
+}
+.history__desc {
+  color: var(--hushed);
+  max-width: 48ch;
+}
+
+/* The section's own label, in the product's chip idiom rather than a pill of
+   its own invention. */
+.history__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--panel);
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--hushed);
+}
+
+.history__card {
+  animation: rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.history__table th {
+  background: var(--panel);
+  position: sticky;
+  top: 0;
+}
+.history__table tbody tr {
+  transition: background 160ms ease;
+}
+.history__table tbody tr:hover {
+  background: var(--panel);
+}
+.history__table td {
+  vertical-align: middle;
+}
+.history__date,
+.history__name {
+  display: block;
+  font-weight: 500;
+}
+.history__no,
+.history__memo {
+  display: block;
+  margin-top: 0.1rem;
+  font-size: 0.74rem;
+  color: var(--faint);
+}
+.history__no {
+  font-family: var(--mono);
+}
+.history__memo {
+  color: var(--hushed);
+  max-width: 28ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.history__action {
+  text-align: right;
+  width: 1%;
+}
+
+/* Status. Two colours only, because there are only two things true of a row:
+   it settled, and it either counts toward a Passport or it does not. */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+.badge + .badge {
+  margin-left: 0.3rem;
+}
+.badge--good {
+  color: var(--good);
+  border-color: color-mix(in srgb, var(--good) 28%, transparent);
+  background: color-mix(in srgb, var(--good) 12%, transparent);
+}
+.badge--warn {
+  color: #a9752a;
+  border-color: color-mix(in srgb, #a9752a 28%, transparent);
+  background: color-mix(in srgb, #a9752a 12%, transparent);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .badge--warn {
+    color: #d9a441;
+    border-color: color-mix(in srgb, #d9a441 30%, transparent);
+    background: color-mix(in srgb, #d9a441 14%, transparent);
+  }
+}
+:root[data-theme="dark"] .badge--warn {
+  color: #d9a441;
+  border-color: color-mix(in srgb, #d9a441 30%, transparent);
+  background: color-mix(in srgb, #d9a441 14%, transparent);
+}
+
+.iconbtn {
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-sm);
+  color: var(--hushed);
+  text-decoration: none;
+  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+.iconbtn:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+.iconbtn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-ring);
+}
+
+.history__empty {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  padding: 2.4rem 1rem;
+  text-align: center;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--hushed);
+}
+.history__empty svg {
+  color: var(--faint);
+  margin-bottom: 0.2rem;
+}
+
+.history__foot {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.history__foot .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* On a phone the memo is the first thing that can go: the name, the amount and
+   the receipt are what the row is for. */
+@media (max-width: 34rem) {
+  .history__table .history__memo {
+    display: none;
+  }
+  .history__table th,
+  .history__table td {
+    padding-inline: 0.55rem;
+  }
 }
