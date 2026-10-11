@@ -320,6 +320,13 @@ export function PayScreen({
         </div>
 
         <aside className="homeside">
+          {/* Where an opened calendar day lands. It is filled from Due dates,
+              and while it holds something the summary below steps aside —
+              the column is one column, and the day is what was just asked
+              for. */}
+          <div id="day-detail" />
+
+          <div className="homeside__summary">
           {data !== null && (
             <div className="factgrid">
               <div className="fact">
@@ -354,6 +361,7 @@ export function PayScreen({
               <b>Home</b>
               <span>Balance and summary</span>
             </a>
+          </div>
           </div>
         </aside>
       </div>
