@@ -51,8 +51,8 @@ jobs:
         env:
           # Pages serves this repo under /Remi/.
           BASE_PATH: /${{ github.event.repository.name }}/
-          VITE_API_BASE: ${{ vars.API_BASE }}
-        run: npm run build --workspace app
+          VITE_API_BASE: ${{ vars.VITE_API_BASE }}
+        run: npm run build
 
       - name: Assemble site
         run: |
