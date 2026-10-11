@@ -261,7 +261,7 @@ export function PassportScreen({
               {shared && (
                 <p className="small faint">
                   Every figure on this page traces to a settled payout that anyone can verify
-                  independently. {formatMonth(assessment.byMonth[0]?.month ?? "")} onward.
+                  independently.{assessment.byMonth[0]?.month ? ` ${formatMonth(assessment.byMonth[0].month)} onward.` : ""}
                 </p>
               )}
             </>

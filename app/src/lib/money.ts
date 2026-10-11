@@ -36,8 +36,12 @@ export function formatUsd(minor: bigint | string): string {
 /** Full precision, for a receipt where the exact settled figure matters. */
 export function formatExact(minor: bigint | string): string {
   const value = typeof minor === "string" ? BigInt(minor) : minor;
-  const whole = value / BASE;
-  return `${whole.toLocaleString("en-US")}.${(value % BASE).toString().padStart(DECIMALS, "0")}`;
+  const negative = value < 0n;
+  const abs = negative ? -value : value;
+  const whole = abs / BASE;
+  const frac = (abs % BASE).toString().padStart(DECIMALS, "0");
+  const body = `${whole.toLocaleString("en-US")}.${frac}`;
+  return negative ? `-${body}` : body;
 }
 
 export function formatDate(unixSeconds: number): string {

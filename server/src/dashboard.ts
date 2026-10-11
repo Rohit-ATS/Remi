@@ -98,8 +98,14 @@ export function buildDashboard(
       });
     }
   }
-  needs1099.sort((a, b) => (BigInt(a.total) < BigInt(b.total) ? 1 : -1));
-  approaching1099.sort((a, b) => (BigInt(a.remaining) < BigInt(b.remaining) ? -1 : 1));
+  needs1099.sort((a, b) => {
+    const diff = BigInt(b.total) - BigInt(a.total);
+    return diff > 0n ? 1 : diff < 0n ? -1 : a.payee.localeCompare(b.payee);
+  });
+  approaching1099.sort((a, b) => {
+    const diff = BigInt(a.remaining) - BigInt(b.remaining);
+    return diff > 0n ? 1 : diff < 0n ? -1 : a.payee.localeCompare(b.payee);
+  });
 
   const oldest = sorted[sorted.length - 1];
 

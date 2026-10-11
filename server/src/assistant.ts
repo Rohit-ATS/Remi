@@ -44,15 +44,16 @@ function iso(timestamp: number): string {
 }
 
 function addTo(map: Record<string, string>, key: string, amount: bigint): void {
-  map[key] = ((map[key] ? BigInt(map[key]) : 0n) + amount).toString();
+  const current = Object.hasOwn(map, key) ? BigInt(map[key]!) : 0n;
+  map[key] = (current + amount).toString();
 }
 
 /** Aggregates the rows the model is allowed to talk about. */
 export function summarise(rows: PayoutRow[]): AssistantFacts {
   let total = 0n;
-  const byCategory: Record<string, string> = {};
-  const byPayee: Record<string, string> = {};
-  const byMonth: Record<string, string> = {};
+  const byCategory: Record<string, string> = Object.create(null);
+  const byPayee: Record<string, string> = Object.create(null);
+  const byMonth: Record<string, string> = Object.create(null);
 
   const sorted = [...rows].sort((a, b) => a.timestamp - b.timestamp);
   for (const r of sorted) {

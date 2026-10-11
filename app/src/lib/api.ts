@@ -104,9 +104,13 @@ export function apiIsUnconfigured(): boolean {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers: Record<string, string> = {};
+  if (init?.body) {
+    headers["content-type"] = "application/json";
+  }
   const response = await fetch(`${API_BASE}${path}`, {
     ...init,
-    headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
+    headers: { ...headers, ...(init?.headers ?? {}) },
   });
   if (!response.ok) {
     let detail = `${response.status}`;
@@ -118,27 +122,33 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     }
     throw new Error(detail);
   }
-  return (await response.json()) as T;
+  try {
+    return (await response.json()) as T;
+  } catch {
+    throw new Error(`Invalid JSON response from ${path}`);
+  }
 }
 
 export const api = {
   config: () => request<ServerConfig>("/api/config"),
 
-  dashboard: (owner: string) => request<Dashboard>(`/api/dashboard?owner=${owner}`),
+  dashboard: (owner: string) => request<Dashboard>(`/api/dashboard?owner=${encodeURIComponent(owner)}`),
 
-  payouts: (owner: string) => request<{ payouts: Payout[] }>(`/api/payouts?owner=${owner}`),
+  payouts: (owner: string) => request<{ payouts: Payout[] }>(`/api/payouts?owner=${encodeURIComponent(owner)}`),
 
   books: (owner: string, month?: string) =>
-    request<Books>(`/api/books?owner=${owner}${month ? `&month=${month}` : ""}`),
+    request<Books>(
+      `/api/books?owner=${encodeURIComponent(owner)}${month ? `&month=${encodeURIComponent(month)}` : ""}`,
+    ),
 
-  csvUrl: (owner: string) => `${API_BASE}/api/books.csv?owner=${owner}`,
+  csvUrl: (owner: string) => `${API_BASE}/api/books.csv?owner=${encodeURIComponent(owner)}`,
 
   receipt: (receiptNo: number) =>
-    request<{ receipt: Payout; verifyUrl: string | null }>(`/api/receipt/${receiptNo}`),
+    request<{ receipt: Payout; verifyUrl: string | null }>(`/api/receipt/${encodeURIComponent(receiptNo)}`),
 
   passport: (address: string) =>
     request<{ address: string; assessment: Assessment; payouts: Payout[] }>(
-      `/api/passport/${address}`,
+      `/api/passport/${encodeURIComponent(address)}`,
     ),
 
   ask: (owner: string, question: string) =>

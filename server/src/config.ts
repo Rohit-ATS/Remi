@@ -87,6 +87,14 @@ function positiveInt(value: string | undefined, fallback: number, name: string):
   return n;
 }
 
+function nonNegativeBigInt(value: string | undefined, fallback: bigint, name: string): bigint {
+  if (value === undefined || value === "") return fallback;
+  if (!/^\d+$/.test(value.trim())) {
+    throw new Error(`${name} must be a non-negative integer`);
+  }
+  return BigInt(value.trim());
+}
+
 function origins(value: string | undefined): string[] {
   const result = (value ?? "http://localhost:5173")
     .split(",")
@@ -115,10 +123,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     rpcUrl: env.RPC_URL ?? chain.rpcUrls.default.http[0],
     payoutsAddress: address(env.PAYOUTS_ADDRESS),
     tokenAddress: address(env.TOKEN_ADDRESS),
-    startBlock: BigInt(env.START_BLOCK ?? "0"),
+    startBlock: nonNegativeBigInt(env.START_BLOCK, 0n, "START_BLOCK"),
     dbPath: env.DB_PATH ?? "remi.db",
     pollMs: int(env.POLL_MS, network === "local" ? 500 : 2000),
-    logChunk: BigInt(env.LOG_CHUNK ?? "2000"),
+    logChunk: nonNegativeBigInt(env.LOG_CHUNK, 2000n, "LOG_CHUNK"),
     corsOrigins: origins(env.CORS_ORIGINS),
     assistant: {
       maxRequests: positiveInt(env.ASSISTANT_RATE_LIMIT, 20, "ASSISTANT_RATE_LIMIT"),

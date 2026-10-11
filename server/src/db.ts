@@ -43,6 +43,14 @@ CREATE TABLE IF NOT EXISTS meta (
 );
 `;
 
+function mapRow(raw: unknown): PayoutRow {
+  const r = raw as PayoutRow;
+  return {
+    ...r,
+    passport_eligible: Boolean(r.passport_eligible),
+  };
+}
+
 export class Store {
   readonly db: DatabaseSync;
 
@@ -128,22 +136,23 @@ export class Store {
 
   payoutsByPayer(payer: string, limit = 200): PayoutRow[] {
     const bounded = Math.max(1, Math.min(Math.floor(limit), 500));
-    return this.db
+    const rows = this.db
       .prepare("SELECT * FROM payouts WHERE payer = ? ORDER BY timestamp DESC, receipt_no DESC LIMIT ?")
-      .all(payer.toLowerCase(), bounded) as unknown as PayoutRow[];
+      .all(payer.toLowerCase(), bounded);
+    return rows.map(mapRow);
   }
 
   payoutsByPayee(payee: string, limit = 200): PayoutRow[] {
     const bounded = Math.max(1, Math.min(Math.floor(limit), 500));
-    return this.db
+    const rows = this.db
       .prepare("SELECT * FROM payouts WHERE payee = ? ORDER BY timestamp DESC, receipt_no DESC LIMIT ?")
-      .all(payee.toLowerCase(), bounded) as unknown as PayoutRow[];
+      .all(payee.toLowerCase(), bounded);
+    return rows.map(mapRow);
   }
 
   payoutByReceipt(receiptNo: number): PayoutRow | undefined {
-    return this.db.prepare("SELECT * FROM payouts WHERE receipt_no = ?").get(receiptNo) as
-      | PayoutRow
-      | undefined;
+    const row = this.db.prepare("SELECT * FROM payouts WHERE receipt_no = ?").get(receiptNo);
+    return row ? mapRow(row) : undefined;
   }
 
   counts(): { payouts: number } {

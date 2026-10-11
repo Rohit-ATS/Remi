@@ -139,3 +139,37 @@ test("the window anchors on the latest payout, not the clock", () => {
   assert.equal(d.month, "2026-08");
   assert.equal(d.byMonth[d.byMonth.length - 1]!.month, "2026-08");
 });
+
+test("needs1099 sorts stably when totals are equal", () => {
+  const d = buildDashboard(
+    [
+      row({ dollars: 600, label: "contractor-b", payee: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" }),
+      row({ dollars: 600, label: "contractor-a", payee: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }),
+    ],
+    2,
+    NOW,
+  );
+  assert.equal(d.needs1099.length, 2);
+  assert.equal(d.needs1099[0]!.payee, "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+  assert.equal(d.needs1099[1]!.payee, "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+});
+
+test("approaching1099 sorts stably when remaining is equal", () => {
+  const d = buildDashboard(
+    [
+      row({ dollars: 550, label: "contractor-b", payee: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" }),
+      row({ dollars: 550, label: "contractor-a", payee: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }),
+    ],
+    2,
+    NOW,
+  );
+  assert.equal(d.approaching1099.length, 2);
+  assert.equal(d.approaching1099[0]!.payee, "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+  assert.equal(d.approaching1099[1]!.payee, "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+});
+
+test("monthDelta is zero when current and previous month have zero spend", () => {
+  const d = buildDashboard([], 0, NOW);
+  assert.equal(d.monthDelta, "0");
+});
+

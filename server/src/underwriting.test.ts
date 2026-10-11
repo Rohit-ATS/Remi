@@ -130,3 +130,28 @@ test("a thin record is held down by confidence, not by quality signals", () => {
   assert.equal(many.signals.confidence, 1);
   assert.ok(many.stabilityScore > one.stabilityScore * 5);
 });
+
+test("a declining trend is detected and noted in reasons", () => {
+  const rows = [
+    payout("0xa", 800, at(2026, 7)),
+    payout("0xa", 800, at(2026, 8)),
+    payout("0xa", 200, at(2026, 9)),
+    payout("0xa", 200, at(2026, 10)),
+  ];
+  const a = assess(rows, NOW);
+  assert.ok(a.signals.trend < 0.85, `expected declining trend, got ${a.signals.trend}`);
+  assert.ok(a.reasons.some((r) => /below the earlier/.test(r)));
+});
+
+test("large amounts maintain bigint precision", () => {
+  const bigDollars = 1_000_000_000; // $1 billion
+  const a = assess([payout("0xa", bigDollars, at(2026, 10))], NOW);
+  assert.equal(a.totalEarned, (BigInt(bigDollars) * USD).toString());
+});
+
+test("when stabilityScore is 0 advanceCeiling is 0", () => {
+  const a = assess([], NOW);
+  assert.equal(a.stabilityScore, 0);
+  assert.equal(a.advanceCeiling, "0");
+});
+

@@ -124,3 +124,50 @@ test("csv rows run oldest first", () => {
   assert.ok(lines[1]!.startsWith("2026-10-01"));
   assert.ok(lines[2]!.startsWith("2026-10-09"));
 });
+
+test("csv handles empty rows returning only the header", () => {
+  const csv = toCsv([]);
+  assert.equal(csv, "date,payee_label,payee_address,category,amount,memo,receipt_no,tx_hash\n");
+});
+
+test("csv sanitizes formula injection characters (=, +, @, -cmd)", () => {
+  const csv = toCsv([
+    row({
+      label: '=HYPERLINK("http://evil.com","click")',
+      memo: "+cmd|' /C calc'!A0",
+      category: "@Contractor",
+    }),
+  ]);
+  assert.ok(csv.includes("'=HYPERLINK"));
+  assert.ok(csv.includes("'+cmd|"));
+  assert.ok(csv.includes("'@Contractor"));
+});
+
+test("csv formats negative amounts correctly without losing sign or padding", () => {
+  const csv = toCsv([
+    row({ amount: "-500000" }), // -$0.50
+    row({ amount: "-1500000" }), // -$1.50
+  ]);
+  assert.ok(csv.includes("-0.500000"));
+  assert.ok(csv.includes("-1.500000"));
+});
+
+test("buildBooks handles empty rows gracefully", () => {
+  const b = buildBooks([]);
+  assert.equal(b.monthTotal, "0");
+  assert.equal(b.previousMonthTotal, "0");
+  assert.deepEqual(b.byCategory, []);
+  assert.deepEqual(b.byPayee, []);
+  assert.deepEqual(b.yearToDate.contractors, []);
+});
+
+test("buildBooks sorts categories stably when amounts are equal", () => {
+  const b = buildBooks([
+    row({ dollars: 100, category: "Software" }),
+    row({ dollars: 100, category: "Rent" }),
+  ], "2026-10");
+  assert.equal(b.byCategory.length, 2);
+  assert.equal(b.byCategory[0]!.total, (100n * USD).toString());
+  assert.equal(b.byCategory[1]!.total, (100n * USD).toString());
+});
+

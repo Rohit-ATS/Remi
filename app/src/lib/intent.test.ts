@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parsePaymentIntent } from "./intent.ts";
-import { parseAmount, formatAmount, formatUsd } from "./money.ts";
+import { parseAmount, formatAmount, formatUsd, formatExact } from "./money.ts";
 
 const USD = 1_000_000n;
 
@@ -31,6 +31,16 @@ describe("money", () => {
     expect(formatUsd(400_500_000n)).toBe("$400.50");
     // Sub-cent remainders are truncated for display, never rounded up.
     expect(formatAmount(400_509_999n)).toBe("400.50");
+    expect(formatAmount(-400n * USD)).toBe("-400.00");
+    expect(formatAmount(0n)).toBe("0.00");
+  });
+
+  it("formatExact shows all 6 decimal places, including negative numbers", () => {
+    expect(formatExact(400n * USD)).toBe("400.000000");
+    expect(formatExact(1n)).toBe("0.000001");
+    expect(formatExact(0n)).toBe("0.000000");
+    expect(formatExact(-400n * USD)).toBe("-400.000000");
+    expect(formatExact(-500_000n)).toBe("-0.500000");
   });
 });
 
@@ -109,5 +119,23 @@ describe("parsePaymentIntent", () => {
     expect(ok("send Maria 400").amount).toBe(400n * USD);
     expect(ok("transfer $400 to Maria").amount).toBe(400n * USD);
     expect(ok("wire Maria 400").amount).toBe(400n * USD);
+  });
+
+  it("handles Unicode names properly", () => {
+    expect(ok("pay José 400").payee).toBe("José");
+    expect(ok("pay François 100").payee).toBe("François");
+  });
+
+  it("handles amounts formatted with commas", () => {
+    expect(ok("pay Maria $1,250").amount).toBe(1250n * USD);
+    expect(ok("send $2,500.50 to Bob").amount).toBe(2500_500_000n);
+  });
+
+  it("handles very large amounts", () => {
+    expect(ok("pay Maria $1,000,000,000").amount).toBe(1_000_000_000n * USD);
+  });
+
+  it("refuses negative amounts", () => {
+    expect(parsePaymentIntent("pay Maria -100").ok).toBe(false);
   });
 });

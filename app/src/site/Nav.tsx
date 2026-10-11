@@ -153,11 +153,23 @@ export function Nav({ account }: { account: StoredAccount | null }) {
 
       {mobileOpen && (
         <div className="mobilenav">
-          {NAV.map((item) => (
-            <a key={item.label} href={item.href ?? `#${item.label.toLowerCase()}`} onClick={() => setMobileOpen(false)}>
-              {item.label}
-            </a>
-          ))}
+          {NAV.flatMap((item) =>
+            item.links
+              ? item.links.map((link) => (
+                  <a key={link.label} href={link.href} onClick={() => setMobileOpen(false)}>
+                    {link.label}
+                  </a>
+                ))
+              : [
+                  <a
+                    key={item.label}
+                    href={item.href ?? `#${item.label.toLowerCase()}`}
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    {item.label}
+                  </a>,
+                ],
+          )}
           {account === null ? (
             <>
               <a href={signInHref({ mode: "signin" })} onClick={() => setMobileOpen(false)}>

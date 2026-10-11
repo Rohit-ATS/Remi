@@ -61,7 +61,9 @@ export function ReceiptScreen({
   };
 
   const isRecipient =
-    account !== null && receipt !== null && account.address.toLowerCase() === receipt.payee;
+    account !== null &&
+    receipt !== null &&
+    account.address.toLowerCase() === receipt.payee.toLowerCase();
 
   return (
     <main className="shell">

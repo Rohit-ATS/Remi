@@ -133,7 +133,7 @@ export function parsePaymentIntent(transcript: string): ParseResult {
   } else if (directMatch) {
     const rest = directMatch[1]!.trim();
     // The amount is whichever end carries the digits or number words.
-    const digits = /(\$?\s*[\d,]+(?:\.\d{1,6})?)/.exec(rest);
+    const digits = /(-?\s*\$?\s*[\d,]+(?:\.\d{1,6})?)/.exec(rest);
     if (digits) {
       amountRaw = digits[1]!;
       nameRaw = (rest.slice(0, digits.index) + " " + rest.slice(digits.index + digits[1]!.length)).trim();
@@ -160,6 +160,9 @@ export function parsePaymentIntent(transcript: string): ParseResult {
   }
 
   // Resolve the amount: digits first, then number words.
+  if (amountRaw.trim().startsWith("-")) {
+    return { ok: false, reason: "The amount has to be more than zero." };
+  }
   let amount: bigint | null = null;
   const numeric = /\$?\s*([\d,]+(?:\.\d{1,6})?)/.exec(amountRaw);
   if (numeric) {

@@ -52,7 +52,7 @@ function groupTotals<K extends string>(
   }
   return [...map.entries()]
     .map(([k, v]) => ({ key: k, total: v.total, count: v.count }))
-    .sort((a, b) => (a.total < b.total ? 1 : -1));
+    .sort((a, b) => (a.total < b.total ? 1 : a.total > b.total ? -1 : 0));
 }
 
 export function buildBooks(rows: PayoutRow[], month?: string): Books {
@@ -99,7 +99,11 @@ export function buildBooks(rows: PayoutRow[], month?: string): Books {
 }
 
 function csvCell(value: string): string {
-  return /[",\n]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value;
+  let cell = value;
+  if (/^[=+@\t\r]|^\-(?!\d)/.test(cell)) {
+    cell = `'${cell}`;
+  }
+  return /[",\n\r]/.test(cell) ? `"${cell.replaceAll('"', '""')}"` : cell;
 }
 
 /** Amounts are written as plain decimal strings so a spreadsheet reads them as numbers. */
@@ -119,7 +123,11 @@ export function toCsv(rows: PayoutRow[], decimals = 6): string {
   for (const r of [...rows].sort((a, b) => a.timestamp - b.timestamp)) {
     const minor = BigInt(r.amount);
     const base = 10n ** BigInt(decimals);
-    const amount = `${minor / base}.${(minor % base).toString().padStart(decimals, "0")}`;
+    const negative = minor < 0n;
+    const abs = negative ? -minor : minor;
+    const whole = abs / base;
+    const frac = (abs % base).toString().padStart(decimals, "0");
+    const amount = `${negative ? "-" : ""}${whole}.${frac}`;
     lines.push(
       [
         new Date(r.timestamp * 1000).toISOString().slice(0, 10),

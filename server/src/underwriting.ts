@@ -50,16 +50,16 @@ export type Assessment = {
   reasons: string[];
 };
 
-const MONTH_MS = 1000;
+const SECOND_MS = 1000;
 
 function monthKey(unixSeconds: number): string {
-  const d = new Date(unixSeconds * MONTH_MS);
+  const d = new Date(unixSeconds * SECOND_MS);
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
 function monthsBetween(aSeconds: number, bSeconds: number): number {
-  const a = new Date(aSeconds * MONTH_MS);
-  const b = new Date(bSeconds * MONTH_MS);
+  const a = new Date(aSeconds * SECOND_MS);
+  const b = new Date(bSeconds * SECOND_MS);
   return (
     (b.getUTCFullYear() - a.getUTCFullYear()) * 12 + (b.getUTCMonth() - a.getUTCMonth()) + 1
   );
@@ -163,7 +163,7 @@ export function assess(payouts: PayoutLike[], now: number = Math.floor(Date.now(
 
   const concentration = byClient.length > 0 ? byClient[0]!.share : 1;
 
-  // Trend: the most recent third of observed months against the previous third.
+  // Trend: the most recent half of observed months against the previous half.
   const window = Math.max(1, Math.floor(byMonth.length / 2));
   const recent = monthly.slice(-window).reduce((a, b) => a + b, 0n);
   const prior = monthly.slice(-window * 2, -window).reduce((a, b) => a + b, 0n);
