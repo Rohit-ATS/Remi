@@ -2,6 +2,7 @@ import { ArrowLink, ArrowUpRight, Button, Check } from "./primitives.tsx";
 import { FOOTER, STACK, TILES } from "./content.ts";
 import type { StoredAccount } from "../lib/account.ts";
 import { routeHref, signInHref } from "../lib/router.ts";
+import { unlockName } from "../lib/unlock.ts";
 
 /**
  * The bordered cell grid. Ramp fills this with customer logos; Remi has no
@@ -337,7 +338,7 @@ export function CTA({ account }: { account: StoredAccount | null }) {
             </p>
             <div className="cta__actions">
               <Button variant="accent" size="lg" href={account === null ? signInHref({ mode: "create" }) : routeHref("/app")}>
-                {account === null ? "Set up with Face ID" : "Open your dashboard"}
+                {account === null ? `Set up with ${unlockName()}` : "Open your dashboard"}
               </Button>
               <Button variant="onnight" size="lg" href="https://github.com/Rohit-ATS/Remi">
                 Read the source
