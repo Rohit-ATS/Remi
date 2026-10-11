@@ -1,13 +1,14 @@
 name: Deploy to GitHub Pages
 
-# The marketing frontend is a React app and works standalone. The product app
-# is deployed beneath it too,
-# but it needs the Remi server to read the chain and add up the books, and a
-# static host cannot run one — so it is deployed as a shell that says so, and
-# becomes live the moment VITE_API_BASE points at a hosted server.
+# One app, one build. The landing page, sign-in and dashboard are routes in the
+# same bundle, so Pages serves a site where the marketing half is fully
+# functional and the signed-in half says plainly what it is missing.
 #
-# To make the deployed app functional, host server/ somewhere and set a
-# repository variable named API_BASE to its origin (Settings → Variables).
+# What it is missing is the server: the dashboard needs it to read the chain and
+# add up the books, and a static host cannot run one. The product routes become
+# live the moment VITE_API_BASE points at a hosted Remi server — host server/
+# somewhere and set a repository variable named API_BASE to its origin
+# (Settings → Variables).
 
 on:
   push:
@@ -46,23 +47,17 @@ jobs:
       - name: Test
         run: npm test
 
-      - name: Build marketing frontend
+      - name: Build
         env:
+          # Pages serves this repo under /Remi/.
           BASE_PATH: /${{ github.event.repository.name }}/
-        run: npm run build --workspace frontend
-
-      - name: Build app
-        env:
-          # Pages serves this repo under /Remi/, and the app sits beneath it.
-          BASE_PATH: /${{ github.event.repository.name }}/app/
           VITE_API_BASE: ${{ vars.API_BASE }}
         run: npm run build --workspace app
 
       - name: Assemble site
         run: |
           mkdir -p _site
-          cp -r frontend/dist/. _site/
-          cp -r app/dist _site/app
+          cp -r app/dist/. _site/
           # Without this, Pages runs Jekyll and drops files beginning with _.
           touch _site/.nojekyll
 

@@ -13,3 +13,4 @@ server/dist/
 app/src/**/*.js
 _site/
 .gstack/
+cache/

@@ -91,20 +91,36 @@ parser in [`app/src/lib/intent.ts`](app/src/lib/intent.ts). When the model is
 unreachable the endpoint answers from the computed figures instead of failing or
 inventing.
 
-## Running it
+## Running it locally
+
+Everything runs offline against a local chain. No faucet, no testnet, no keys
+to set up.
 
 ```bash
 npm install
-npm run compile                      # solc -> artifacts/ + generated ABIs
+npm run compile                 # solc -> artifacts/ + generated ABIs
 
-cp .env.example .env                 # add PRIVATE_KEY (a key holding only gas)
-npm run deploy                       # testnet: deploys DemoUSD + RemiPayouts
-
-npm run dev                          # server on :8787, app on :5173
+npm run chain                   # terminal 1: local EVM on :8545, funded accounts
+NETWORK=local npm run deploy    # terminal 2: DemoUSD + RemiPayouts, writes .env
+NETWORK=local npm run demo      # six months of real payouts, on chain
+npm run dev                     # server on :8787, app on :5173
 ```
 
 Open <http://localhost:5173>. Passkeys work on `localhost`, so Face ID works in
 development.
+
+A fresh passkey account starts with no gas and no balance, so on a local chain
+the dashboard offers **Add test dollars** — 1 ETH for gas and 5,000 dUSD, from
+the same faucet `npm run demo` uses. It exists only when `NETWORK=local`.
+
+The chain deliberately boots seven months in the past. Block timestamps can only
+move forward, so a node starting at "now" could never be given a history, and
+Books, the Passport and the income score are all worth nothing without one.
+`npm run demo` walks the clock forward to today.
+
+To settle on a real network instead, set `NETWORK=testnet` (chain 10143) with a
+funded `PRIVATE_KEY` in `.env`, or `NETWORK=mainnet` with `TOKEN_ADDRESS` set to
+AUSD's real address.
 
 To prove a payout end to end:
 

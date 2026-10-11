@@ -6,7 +6,6 @@
   "license": "MIT",
   "type": "module",
   "workspaces": [
-    "frontend",
     "app",
     "server"
   ],
@@ -23,7 +22,6 @@
     "build": "npm run build --workspace server && npm run build --workspace app",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
-    "dev:frontend": "npm run dev --workspace frontend",
     "chain": "hardhat node --hostname 127.0.0.1 --port 8545",
     "demo": "node scripts/demo.mjs"
   },
