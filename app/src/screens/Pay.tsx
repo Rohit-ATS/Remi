@@ -5,7 +5,6 @@ import { getBalance } from "../lib/payouts.ts";
 import { formatAmount, formatUsd, shortAddress } from "../lib/money.ts";
 import { Composer } from "./Composer.tsx";
 import { AppHeader } from "../components/AppHeader.tsx";
-import { PaymentHistory } from "../components/PaymentHistory.tsx";
 import { DueDates } from "../components/DueDates.tsx";
 
 /**
@@ -319,24 +318,6 @@ export function PayScreen({
             </section>
           ) : null}
 
-          <section className="block" aria-label="Payments sent">
-            {data === null && error === null ? (
-              <p className="hushed">
-                <span className="spinner" /> Loading…
-              </p>
-            ) : (
-              <PaymentHistory
-                payouts={data?.recent ?? []}
-                heading="Payments sent"
-                description="Your most recent payouts, each one backed by a receipt the recipient can verify."
-                viewAllUrl={data !== null && data.recent.length > 0 ? "#/books" : undefined}
-                csvUrl={
-                  data !== null && data.recent.length > 0 ? api.csvUrl(account.address) : undefined
-                }
-                emptyNote="Payments you send appear here, and on the recipient’s Passport."
-              />
-            )}
-          </section>
         </div>
 
         <aside className="homeside">
@@ -365,6 +346,10 @@ export function PayScreen({
             <a className="quick" href="#/books">
               <b>Books</b>
               <span>Categories, totals, CSV</span>
+            </a>
+            <a className="quick" href="#/passport">
+              <b>Payment history</b>
+              <span>Sent and received</span>
             </a>
             <a className="quick" href="#/app">
               <b>Home</b>

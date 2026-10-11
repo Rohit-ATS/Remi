@@ -33,6 +33,7 @@ export function PassportScreen({
 }) {
   const [assessment, setAssessment] = useState<Assessment | null>(null);
   const [payouts, setPayouts] = useState<Payout[]>([]);
+  const [sent, setSent] = useState<Payout[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -54,6 +55,34 @@ export function PassportScreen({
       cancelled = true;
     };
   }, [address]);
+
+  // Only the holder, looking at their own record while signed in, sees what
+  // they have sent. A shared Passport is an income record: who the holder pays
+  // is their business's own ledger and has no place on a page made to be handed
+  // to a landlord or a lender, so it is never even fetched.
+  const ownRecord =
+    !shared && account !== null && account.address.toLowerCase() === address.toLowerCase();
+
+  useEffect(() => {
+    if (!ownRecord) {
+      setSent(null);
+      return;
+    }
+    let cancelled = false;
+    api
+      .payouts(address)
+      .then((result) => {
+        if (!cancelled) setSent(result.payouts);
+      })
+      .catch(() => {
+        // The record above is the point of this screen; a missing sent list is
+        // worth leaving out, not worth an error over the whole page.
+        if (!cancelled) setSent([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [address, ownRecord]);
 
   const share = async (): Promise<void> => {
     try {
@@ -231,6 +260,18 @@ export function PassportScreen({
                 }
                 emptyNote="Payments received at this address appear here."
               />
+
+              {ownRecord && sent !== null && (
+                <PaymentHistory
+                  payouts={sent}
+                  direction="sent"
+                  heading="Payments sent"
+                  description="What you have paid out. This half is yours alone — it is left off the record you share."
+                  viewAllUrl={sent.length > 0 ? "#/books" : undefined}
+                  csvUrl={sent.length > 0 ? api.csvUrl(address) : undefined}
+                  emptyNote="Payments you send appear here, and on the recipient’s Passport."
+                />
+              )}
 
               {!shared && (
                 <div className="stack-sm">
