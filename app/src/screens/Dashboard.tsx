@@ -146,6 +146,7 @@ export function DashboardScreen({
             </div>
             <DueDates
               account={account}
+              config={config}
               onPay={(occurrence) =>
                 navigate(
                   payHref({
