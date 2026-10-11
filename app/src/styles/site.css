@@ -253,6 +253,10 @@
 }
 .hero__inner {
   position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(23rem, 0.7fr);
+  gap: clamp(2rem, 8vw, 9rem);
+  align-items: center;
 }
 
 .livestat {
@@ -334,6 +338,167 @@
 }
 .capture__note[data-state="ok"] {
   color: var(--accent);
+}
+
+/* The hero proof is deliberately CSS-only: three product facts travel along
+ * one rail, rather than a decorative illustration that says nothing. */
+.hero-flow {
+  width: 100%;
+  max-width: 29rem;
+  justify-self: end;
+  padding: clamp(1.1rem, 2vw, 1.55rem);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--paper) 84%, transparent);
+  box-shadow: 0 20px 50px rgba(14, 13, 12, 0.06);
+  backdrop-filter: blur(5px);
+  position: relative;
+}
+.hero-flow::before {
+  content: "";
+  position: absolute;
+  width: 10rem;
+  height: 10rem;
+  right: -4.5rem;
+  top: -4.5rem;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  filter: blur(3px);
+  opacity: 0.8;
+  z-index: -1;
+}
+.hero-flow__topline,
+.hero-flow__caption,
+.hero-flow__node {
+  position: relative;
+  z-index: 1;
+}
+.hero-flow__topline {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+}
+.hero-flow__topline span:last-child { color: var(--accent); }
+.hero-flow__stage {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 1.5rem;
+  position: relative;
+}
+.hero-flow__line {
+  position: absolute;
+  top: 1.55rem;
+  bottom: 1.55rem;
+  left: 1.25rem;
+  width: 1px;
+  overflow: hidden;
+  background: var(--rule-strong);
+}
+.hero-flow__line i {
+  position: absolute;
+  left: -1px;
+  width: 3px;
+  height: 2.2rem;
+  border-radius: 99px;
+  background: var(--accent);
+  box-shadow: 0 0 15px var(--accent-glow);
+  animation: hero-travel 3.8s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+.hero-flow__node {
+  display: grid;
+  grid-template-columns: 2.7rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 4.55rem;
+  padding: 0.7rem 0.8rem 0.7rem 0;
+}
+.hero-flow__node::before {
+  content: "";
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  width: 0.85rem;
+  height: 0.85rem;
+  justify-self: center;
+  border: 3px solid var(--paper);
+  border-radius: 50%;
+  background: var(--rule-strong);
+  box-shadow: 0 0 0 1px var(--rule-strong);
+}
+.hero-flow__node-label {
+  grid-column: 2;
+  align-self: end;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 0.59rem;
+  letter-spacing: 0.08em;
+}
+.hero-flow__node b {
+  grid-column: 2;
+  align-self: start;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 1.05rem;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+.hero-flow__node small {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  color: var(--hushed);
+  font-size: 0.71rem;
+  text-align: right;
+}
+.hero-flow__node--send::before { background: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
+.hero-flow__node--receipt::before { background: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.hero-flow__node--receipt b { color: var(--accent); font-size: 0.84rem; letter-spacing: 0.08em; }
+.hero-flow__node--passport::before { background: var(--good); box-shadow: 0 0 0 1px var(--good); }
+.hero-flow__node--passport b { color: var(--good); }
+.hero-flow__caption {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 1.2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--rule);
+  color: var(--hushed);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+.hero-flow__caption i {
+  flex: none;
+  width: 0.42rem;
+  height: 0.42rem;
+  margin-top: 0.3rem;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: hero-pulse 3.8s ease-in-out infinite;
+}
+@keyframes hero-travel {
+  0%, 12% { transform: translateY(-2.4rem); opacity: 0; }
+  22% { opacity: 1; }
+  76% { opacity: 1; }
+  92%, 100% { transform: translateY(12.5rem); opacity: 0; }
+}
+@keyframes hero-pulse {
+  0%, 35%, 100% { box-shadow: 0 0 0 0 var(--accent-ring); }
+  55% { box-shadow: 0 0 0 7px transparent; }
+}
+@media (max-width: 960px) {
+  .hero__inner { grid-template-columns: 1fr; gap: 2.3rem; }
+  .hero-flow { justify-self: start; max-width: 31rem; }
+}
+@media (max-width: 520px) {
+  .hero-flow { padding: 1rem; }
+  .hero-flow__node { grid-template-columns: 2.3rem minmax(0, 1fr) auto; gap: 0.5rem; }
+  .hero-flow__node small { max-width: 4.5rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-flow__line i, .hero-flow__caption i { animation: none; }
 }
 
 /* ============================ product panel ============================= */
