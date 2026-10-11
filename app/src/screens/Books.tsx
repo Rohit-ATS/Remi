@@ -3,6 +3,7 @@ import { api, type Books, type ServerConfig } from "../lib/api.ts";
 import type { StoredAccount } from "../lib/account.ts";
 import { formatMonth, formatUsd } from "../lib/money.ts";
 import { AppHeader } from "../components/AppHeader.tsx";
+import { Download } from "../site/primitives.tsx";
 
 /**
  * Books.
@@ -189,6 +190,7 @@ export function BooksScreen({
           </section>
 
           <a className="btn btn-ghost" href={api.csvUrl(account.address)} download>
+            <Download />
             Export for my accountant
           </a>
         </div>
