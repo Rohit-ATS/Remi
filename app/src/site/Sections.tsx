@@ -262,26 +262,44 @@ export function Advances() {
           </p>
         </div>
         <div className="split__media">
-          <div style={{ width: "100%", textAlign: "center" }}>
-            <span className="eyebrow">Income stability</span>
-            <p
-              style={{
-                fontFamily: "var(--mono)",
-                fontSize: "4rem",
-                letterSpacing: "-0.05em",
-                lineHeight: 1,
-                margin: "0.6rem 0 0.2rem",
-              }}
-            >
-              84
-            </p>
-            <p style={{ color: "var(--faint)", fontSize: "0.85rem" }}>out of 100</p>
-            <p style={{ marginTop: "1.2rem", color: "var(--hushed)", fontSize: "0.92rem" }}>
-              10 settled payouts from 2 clients across 5 months. Monthly amounts are consistent.
-            </p>
-            <p style={{ marginTop: "0.9rem", fontSize: "0.85rem", color: "var(--accent)" }}>
-              An advance of up to $399 would be supportable against this record.
-            </p>
+          <div className="stability-card">
+            <header className="stability-card__head">
+              <span className="eyebrow">Income stability</span>
+              <span className="stability-card__verified"><i /> Verified record</span>
+            </header>
+
+            <div className="stability-card__body">
+              <div className="stability-score">
+                <div className="stability-score__ring">
+                  <strong>84</strong>
+                  <span>out of 100</span>
+                </div>
+                <div>
+                  <b>Consistent income</b>
+                  <p>Settled payments have a dependable rhythm.</p>
+                </div>
+              </div>
+
+              <div className="stability-evidence">
+                <p className="stability-evidence__label">What the record shows</p>
+                <div className="stability-evidence__facts">
+                  <div><b>10</b><span>settled payouts</span></div>
+                  <div><b>2</b><span>attested clients</span></div>
+                  <div><b>5</b><span>active months</span></div>
+                </div>
+                <div className="stability-evidence__signal">
+                  <span>Monthly pattern</span>
+                  <b>Regular</b>
+                  <i><i /></i>
+                </div>
+              </div>
+            </div>
+
+            <footer className="stability-card__foot">
+              <span>Record-backed capacity</span>
+              <strong>Up to $399</strong>
+              <small>Not a loan offer</small>
+            </footer>
           </div>
         </div>
       </div>
