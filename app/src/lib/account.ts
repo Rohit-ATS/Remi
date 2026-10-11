@@ -29,9 +29,12 @@ export type StoredAccount = {
   credentialId: string;
   transports?: readonly string[];
   label: string;
+  /** A demo account: its key sits in localStorage, so nothing ever prompts. */
+  demo?: true;
 };
 
 const STORAGE_KEY = "remi.account.v1";
+const DEMO_KEY_STORAGE = "remi.demo-key.v1";
 const RP_NAME = "Remi";
 
 /** Salt for the payee-book encryption key. Never used for signing. */
@@ -69,9 +72,89 @@ export function getStoredAccount(): StoredAccount | null {
 export function signOut(): void {
   try {
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(DEMO_KEY_STORAGE);
   } catch {
     // Nothing to do: there is no key material to clear, only a pointer.
   }
+}
+
+// ---- the demo account
+//
+// A passkey needs hardware Remi cannot assume: a device with a platform
+// authenticator whose password manager implements the WebAuthn PRF extension.
+// Where that is missing — a desktop browser without Touch ID, a VM, a
+// screenshare, a demo on someone else's laptop — the product is unreachable,
+// which is a poor way to show what it does.
+//
+// So there is a second, clearly-labelled door. It replaces the PRF output with
+// 32 random bytes kept in localStorage, and everything downstream is unchanged:
+// the same derivation, the same address, the same signing path, the same
+// encrypted payee book. The only thing it gives up is the thing that matters
+// most in production — the key is at rest in the browser instead of behind a
+// face — which is why it is named a demo everywhere it appears.
+
+function toHex(bytes: Uint8Array): string {
+  return [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function fromHex(text: string): Uint8Array<ArrayBuffer> {
+  const bytes = new Uint8Array(new ArrayBuffer(text.length / 2));
+  for (let i = 0; i < bytes.length; i++) bytes[i] = Number.parseInt(text.slice(i * 2, i * 2 + 2), 16);
+  return bytes;
+}
+
+/** The demo account's stand-in for a PRF output, or null when there is none. */
+function readDemoKey(): Uint8Array<ArrayBuffer> | null {
+  try {
+    const raw = localStorage.getItem(DEMO_KEY_STORAGE);
+    if (raw === null || !/^[0-9a-f]{64}$/.test(raw)) return null;
+    return fromHex(raw);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The demo account's key material for a given PRF salt.
+ *
+ * A passkey answers each salt with a different 32 bytes, and the payee book
+ * depends on that: its encryption key must not be the signing key. Hashing the
+ * stored key together with the salt reproduces that separation.
+ */
+export async function demoPrfOutput(salt?: Uint8Array): Promise<Uint8Array<ArrayBuffer> | null> {
+  const key = readDemoKey();
+  if (key === null) return null;
+  if (salt === undefined) return key;
+
+  const input = new Uint8Array(new ArrayBuffer(key.length + salt.length));
+  input.set(key, 0);
+  input.set(salt, key.length);
+  return new Uint8Array(await crypto.subtle.digest("SHA-256", input));
+}
+
+/** Signs in without a passkey, for devices and demos that cannot run one. */
+export function createDemoAccount(label: string): StoredAccount {
+  let key = readDemoKey();
+  if (key === null) {
+    key = new Uint8Array(new ArrayBuffer(32));
+    crypto.getRandomValues(key);
+    try {
+      localStorage.setItem(DEMO_KEY_STORAGE, toHex(key));
+    } catch {
+      throw new Error("A demo account needs browser storage, which this window has turned off.");
+    }
+  }
+
+  const account: StoredAccount = {
+    address: addressFromPrf(key),
+    // There is no credential, but the field is the account's identity
+    // everywhere else, so it carries a value that cannot collide with one.
+    credentialId: `demo:${toHex(key).slice(0, 16)}`,
+    label,
+    demo: true,
+  };
+  writeStored(account);
+  return account;
 }
 
 /** Turns a 32-byte PRF output into the address it will sign as, without keeping the key. */
@@ -160,6 +243,9 @@ export async function withSession<T>(
   const stored = readStored();
   if (stored === null) throw new Error("Not signed in.");
 
+  const demo = stored.demo === true ? await demoPrfOutput() : null;
+  if (demo !== null) return runSession(demo, chain, rpcUrl, fn);
+
   const { prfOutput } = await getPasskeyPrfOutput({
     rpId: rpId(),
     credential: {
@@ -168,14 +254,24 @@ export async function withSession<T>(
     },
   });
 
-  const session = createSecp256k1SigningSession({ privateKey: prfOutput });
+  return runSession(prfOutput, chain, rpcUrl, fn);
+}
+
+/** The half of `withSession` that is the same however the key was obtained. */
+async function runSession<T>(
+  privateKey: Uint8Array,
+  chain: Chain,
+  rpcUrl: string,
+  fn: (context: SessionContext) => Promise<T>,
+): Promise<T> {
+  const session = createSecp256k1SigningSession({ privateKey });
   try {
     const account = toViemAccount(session);
     const client = createWalletClient({ account, chain, transport: http(rpcUrl) });
     return await fn({ client, address: account.address });
   } finally {
     session.end();
-    prfOutput.fill(0);
+    privateKey.fill(0);
   }
 }
 
