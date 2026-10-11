@@ -1,0 +1,15 @@
+/* The whole app's styling, in load order.
+ *
+ * tokens  — the palette and metrics both halves read
+ * base    — reset, type scale, buttons, the pieces both halves draw with
+ * site    — the landing page
+ * product — the signed-in dashboard, Books, Passport, receipts
+ *
+ * site and product come last and in that order, because where they still hold
+ * different opinions about the same element the product should win: it is the
+ * surface a signed-in person spends their time on.
+ */
+@import "./tokens.css";
+@import "./base.css";
+@import "./site.css";
+@import "./product.css";

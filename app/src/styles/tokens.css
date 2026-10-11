@@ -1,0 +1,137 @@
+/* The one token layer for the whole product: landing page, sign-in and
+ * dashboard all read their colour from here.
+ *
+ * These used to be two files with two vocabularies — the marketing page called
+ * the page ground `--white` and its muted ink `--ink-soft`, while the app
+ * called them `--paper` and `--hushed`. Same palette, two names, and nothing
+ * kept them in step. The product's names won because the product has more
+ * surface, and the site's stylesheet was rewritten onto them.
+ *
+ * Every colour is a token so the two themes stay in step, and because the
+ * landing page now inherits dark mode from the same block the dashboard uses.
+ */
+
+:root {
+  /* ground, lightest to deepest */
+  --paper: #ffffff;
+  --canvas: #fbfaf9;
+  --card: #ffffff;
+  --panel: #f2f1ef;
+  --panel-deep: #ebe9e6;
+
+  /* ink */
+  --ink: #0e0d0c;
+  --hushed: rgba(14, 13, 12, 0.56);
+  --faint: rgba(14, 13, 12, 0.34);
+  --rule: #e4e1dd;
+  --rule-strong: #d2cecb;
+
+  /* accent — a signal violet that sits on white rather than shouting over it */
+  --accent: #5b4bff;
+  --accent-hover: #4a39f0;
+  --accent-soft: #eeecff;
+  --accent-press: #e4e0ff;
+  --accent-ring: rgba(91, 75, 255, 0.28);
+  --accent-glow: rgba(91, 75, 255, 0.55);
+  --on-accent: #ffffff;
+
+  /* inverted surfaces. `--deep` is a raised card; `--night` is a full band
+     (the announcement bar, the CTA, the spotlight tile). They are the same
+     colour in light mode and deliberately different in dark, where a band the
+     colour of the page would simply vanish. */
+  --deep: #0e0d0c;
+  --on-deep: #f6f5f3;
+  --on-deep-soft: rgba(246, 245, 243, 0.58);
+  --night: #0e0d0c;
+  --night-rule: #0e0d0c;
+  --on-night: #f6f5f3;
+  --on-night-soft: rgba(246, 245, 243, 0.58);
+  --on-night-dim: rgba(246, 245, 243, 0.16);
+  --ink-press: #2a2724;
+
+  --good: #1a6b4a;
+  --danger: #a32e26;
+
+  --shadow-sm: 0 18px 44px rgba(14, 13, 12, 0.1);
+  --shadow-lg: 0 24px 60px rgba(14, 13, 12, 0.12);
+
+  --display: "Inter Tight", "Helvetica Neue", Arial, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --radius: 10px;
+  --radius-sm: 8px;
+  --radius-lg: 14px;
+  --tap: 44px;
+
+  /* site chrome metrics */
+  --nav-h: 68px;
+  --bar-h: 46px;
+  --gutter: clamp(20px, 4vw, 64px);
+  --maxw: 1480px;
+
+  color-scheme: light;
+}
+
+/* Dark mode is one list, applied twice: once for the OS preference (unless the
+   user has explicitly chosen light) and once for an explicit choice of dark.
+   The toggle in the nav writes data-theme on <html>. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0d0e10;
+    --canvas: #111214;
+    --card: #17181b;
+    --panel: #1c1e21;
+    --panel-deep: #24262a;
+    --ink: #f3f3f4;
+    --hushed: rgba(243, 243, 244, 0.6);
+    --faint: rgba(243, 243, 244, 0.36);
+    --rule: #26282c;
+    --rule-strong: #34373c;
+    --accent: #8d81ff;
+    --accent-hover: #a096ff;
+    --accent-soft: rgba(141, 129, 255, 0.16);
+    --accent-press: rgba(141, 129, 255, 0.26);
+    --accent-ring: rgba(141, 129, 255, 0.3);
+    --accent-glow: rgba(141, 129, 255, 0.4);
+    --on-accent: #0d0e10;
+    --deep: #17181b;
+    --night: #1a1c20;
+    --night-rule: #2e3136;
+    --ink-press: #dedee0;
+    --good: #52b98b;
+    --danger: #e26855;
+    --shadow-sm: 0 18px 44px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.55);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --paper: #0d0e10;
+  --canvas: #111214;
+  --card: #17181b;
+  --panel: #1c1e21;
+  --panel-deep: #24262a;
+  --ink: #f3f3f4;
+  --hushed: rgba(243, 243, 244, 0.6);
+  --faint: rgba(243, 243, 244, 0.36);
+  --rule: #26282c;
+  --rule-strong: #34373c;
+  --accent: #8d81ff;
+  --accent-hover: #a096ff;
+  --accent-soft: rgba(141, 129, 255, 0.16);
+  --accent-press: rgba(141, 129, 255, 0.26);
+  --accent-ring: rgba(141, 129, 255, 0.3);
+  --accent-glow: rgba(141, 129, 255, 0.4);
+  --on-accent: #0d0e10;
+  --deep: #17181b;
+  --night: #1a1c20;
+  --night-rule: #2e3136;
+  --ink-press: #dedee0;
+  --good: #52b98b;
+  --danger: #e26855;
+  --shadow-sm: 0 18px 44px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.55);
+  color-scheme: dark;
+}
