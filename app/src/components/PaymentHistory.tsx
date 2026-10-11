@@ -3,6 +3,7 @@ import type { Payout } from "../lib/api.ts";
 import { formatDate, formatUsd, shortAddress } from "../lib/money.ts";
 import { routeHref } from "../lib/router.ts";
 import { Sheet } from "../screens/Sheets.tsx";
+import { Download } from "../site/primitives.tsx";
 
 /**
  * Payment history, as a table.
@@ -151,7 +152,7 @@ export function PaymentHistory({
           )}
           {csvUrl !== undefined && (
             <a className="btn btn-ghost" href={csvUrl}>
-              <DownloadIcon />
+              <Download size={14} />
               Download CSV
             </a>
           )}
@@ -288,15 +289,6 @@ function ReceiptIcon() {
     <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
       <path d="M3.4 2.2h9.2v11.6l-1.8-1.1-1.8 1.1-1.8-1.1-1.8 1.1-1.8-1.1z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
       <path d="M6 5.6h4M6 8.2h4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function DownloadIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M8 2.4v7.2M5.2 7l2.8 2.8L10.8 7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M2.8 11.8v.6a1.4 1.4 0 0 0 1.4 1.4h7.6a1.4 1.4 0 0 0 1.4-1.4v-.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
     </svg>
   );
 }
