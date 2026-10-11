@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { formatUsd } from "../lib/money.ts";
 import type { PayeeEntry } from "../lib/vault.ts";
+import { unlockName } from "../lib/unlock.ts";
 
 export function Sheet({
   children,
@@ -123,8 +124,8 @@ export function ConfirmSheet({
 
       {needsApproval && (
         <div className="notice notice-accent">
-          First payout from this account needs a one-time approval. Confirming will ask for Face ID
-          twice: once to approve, once to pay.
+          First payout from this account needs a one-time approval. Confirming will ask for{" "}
+          {unlockName()} twice: once to approve, once to pay.
         </div>
       )}
 
@@ -136,7 +137,7 @@ export function ConfirmSheet({
         onClick={onConfirm}
         disabled={busy}
       >
-        {busy ? <span className="spinner" /> : "Confirm with Face ID"}
+        {busy ? <span className="spinner" /> : `Confirm with ${unlockName()}`}
       </button>
       <button type="button" className="btn btn-ghost btn-block" onClick={onClose} disabled={busy}>
         Cancel
