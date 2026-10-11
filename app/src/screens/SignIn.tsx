@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { createAccount, describeError, signIn, type StoredAccount } from "../lib/account.ts";
+import {
+  createAccount,
+  createDemoAccount,
+  describeError,
+  signIn,
+  type StoredAccount,
+} from "../lib/account.ts";
 import type { ServerConfig } from "../lib/api.ts";
 import { navigate, routeHref, signInHref } from "../lib/router.ts";
 import { AppHeader } from "../components/AppHeader.tsx";
@@ -29,18 +35,22 @@ export function SignIn({
   next: string;
   onSignedIn: (account: StoredAccount) => void;
 }) {
-  const [busy, setBusy] = useState<"create" | "signin" | null>(null);
+  const [busy, setBusy] = useState<"create" | "signin" | "demo" | null>(null);
   const [error, setError] = useState<string | null>(null);
   // An email from the hero is a reasonable first guess at the business name,
   // and a filled field is faster to correct than an empty one to complete.
   const [name, setName] = useState(email === null ? "" : businessNameFrom(email));
 
-  const run = async (which: "create" | "signin"): Promise<void> => {
+  const run = async (which: "create" | "signin" | "demo"): Promise<void> => {
     setBusy(which);
     setError(null);
     try {
       const account =
-        which === "create" ? await createAccount(name.trim() || "My business") : await signIn();
+        which === "create"
+          ? await createAccount(name.trim() || "My business")
+          : which === "signin"
+            ? await signIn()
+            : createDemoAccount(name.trim() || "Demo business");
       onSignedIn(account);
       navigate(next);
     } catch (caught) {
@@ -89,7 +99,7 @@ export function SignIn({
             onClick={() => void run(creating ? "create" : "signin")}
             disabled={busy !== null}
           >
-            {busy !== null ? (
+            {busy === (creating ? "create" : "signin") ? (
               <span className="spinner" />
             ) : creating ? (
               "Set up with Face ID"
@@ -104,6 +114,26 @@ export function SignIn({
           >
             {creating ? "I already have an account" : "Set up a new business"}
           </a>
+        </div>
+
+        {/* The way in when Face ID is not on offer: a machine without a
+            platform authenticator, a browser whose password manager has no PRF
+            extension, or a demo on a borrowed laptop. It is a real account on
+            the same chain — only its key sits in this browser rather than
+            behind a face, which is why it says so plainly. */}
+        <div className="card stack-sm">
+          <button
+            type="button"
+            className="btn btn-soft btn-block"
+            onClick={() => void run("demo")}
+            disabled={busy !== null}
+          >
+            {busy === "demo" ? <span className="spinner" /> : "Skip Face ID — open a demo account"}
+          </button>
+          <p className="small faint" style={{ margin: 0 }}>
+            No passkey. The key is generated here and kept in this browser, so use it to look
+            around, not to hold real money.
+          </p>
         </div>
 
         {error !== null && <div className="notice notice-error">{error}</div>}
