@@ -1,10 +1,23 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { formatUsd } from "../lib/money.ts";
 import type { PayeeEntry } from "../lib/vault.ts";
 
-export function Sheet({ children, onClose }: { children: ReactNode; onClose: () => void }) {
-  // Escape closes, and the backdrop is not a click target for dismissal: a
-  // mis-tap next to the Confirm button should never silently cancel a payout.
+export function Sheet({
+  children,
+  label,
+  dismissible = false,
+  onClose,
+}: {
+  children: ReactNode;
+  label?: string;
+  /** Whether the backdrop dismisses. Off by default, and deliberately so. */
+  dismissible?: boolean;
+  onClose: () => void;
+}) {
+  // Escape always closes. The backdrop only does when the caller says so: a
+  // mis-tap next to the Confirm button should never silently cancel a payout,
+  // but a sheet that is only showing you something costs nothing to reopen.
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
       if (event.key === "Escape") onClose();
@@ -13,13 +26,26 @@ export function Sheet({ children, onClose }: { children: ReactNode; onClose: () 
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  return (
-    <div className="sheet-backdrop" role="dialog" aria-modal="true">
-      <div className="sheet">
+  // Through a portal, because a `transform` anywhere up the tree — `.block`
+  // has one — makes that ancestor the containing block for `position: fixed`,
+  // and the sheet then lays itself over the card it came from instead of over
+  // the page. Nothing above body can capture it here.
+  return createPortal(
+    <div
+      className="sheet-backdrop"
+      role="dialog"
+      aria-modal="true"
+      {...(label !== undefined ? { "aria-label": label } : {})}
+      onClick={dismissible ? onClose : undefined}
+    >
+      {/* The sheet is inside the backdrop, so a click on it would bubble out
+          and close the thing it was aimed at. */}
+      <div className="sheet" onClick={(event) => event.stopPropagation()}>
         <span className="sheet-handle" aria-hidden="true" />
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
