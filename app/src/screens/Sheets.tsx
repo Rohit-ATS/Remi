@@ -8,12 +8,20 @@ export function Sheet({
   children,
   label,
   dismissible = false,
+  placement = "bottom",
   onClose,
 }: {
   children: ReactNode;
   label?: string;
   /** Whether the backdrop dismisses. Off by default, and deliberately so. */
   dismissible?: boolean;
+  /**
+   * Where it sits. "bottom" rises from the edge, which is right for something
+   * a thumb is about to act on. "centre" lands in the middle of the screen
+   * and brings nothing of its own — no panel, no handle — so what it is
+   * holding is the object itself rather than a form inside a tray.
+   */
+  placement?: "bottom" | "centre";
   onClose: () => void;
 }) {
   // Escape always closes. The backdrop only does when the caller says so: a
@@ -34,6 +42,7 @@ export function Sheet({
   return createPortal(
     <div
       className="sheet-backdrop"
+      data-placement={placement}
       role="dialog"
       aria-modal="true"
       {...(label !== undefined ? { "aria-label": label } : {})}
@@ -42,7 +51,7 @@ export function Sheet({
       {/* The sheet is inside the backdrop, so a click on it would bubble out
           and close the thing it was aimed at. */}
       <div className="sheet" onClick={(event) => event.stopPropagation()}>
-        <span className="sheet-handle" aria-hidden="true" />
+        {placement === "bottom" && <span className="sheet-handle" aria-hidden="true" />}
         {children}
       </div>
     </div>,
