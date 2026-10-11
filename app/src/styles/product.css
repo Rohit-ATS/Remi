@@ -659,12 +659,21 @@ td.n {
 /* Centred: the dialog lands in the middle and stops being a container. It
    carries no panel of its own, so whatever it holds — a receipt, say — is the
    thing on screen instead of a thing inside a tray. */
+/* A centred dialog sits over the middle of the content rather than along an
+   edge of it, and what is behind this one is a table of dates and figures —
+   which competes with the dates and figures on the receipt itself. It is put
+   properly out of the way: darker, and blurred where the browser can. */
 .sheet-backdrop[data-placement="centre"] {
   align-items: center;
   padding: 24px 16px;
-  /* Darker than the bottom sheet's, because a centred dialog sits over the
-     middle of the content rather than along an edge of it. */
-  background: rgba(12, 10, 8, 0.62);
+  background: rgba(8, 7, 6, 0.74);
+}
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .sheet-backdrop[data-placement="centre"] {
+    background: rgba(8, 7, 6, 0.6);
+    -webkit-backdrop-filter: blur(7px) saturate(0.9);
+    backdrop-filter: blur(7px) saturate(0.9);
+  }
 }
 .sheet-backdrop[data-placement="centre"] .sheet {
   background: none;
@@ -674,13 +683,33 @@ td.n {
   max-height: calc(100dvh - 48px);
   animation: pop-in 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-/* The sheet brings no ground of its own here, so an outlined button would be
-   read through — and what is behind it is a table of numbers. */
-.sheet-backdrop[data-placement="centre"] .btn-ghost {
-  background: var(--card);
+.sheet-backdrop[data-placement="centre"] .receipt {
+  box-shadow: var(--shadow-lg);
 }
-.sheet-backdrop[data-placement="centre"] .btn-ghost:hover {
-  background: var(--panel);
+
+/* The actions were three pills floating over the table, each with its own
+   outline and nothing holding them together. They get a ground of their own,
+   under the torn edge, so the dialog reads as one object ending in the things
+   you can do with it. */
+.receipt-actions {
+  /* The torn edge hangs 9px below the card it belongs to, so the panel starts
+     low enough for the teeth to read as teeth rather than as a seam. */
+  margin-top: 0.3rem;
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.7rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--shadow-lg);
+}
+.receipt-actions .row {
+  display: flex;
+  gap: 0.5rem;
+}
+.receipt-actions .row > * {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 /* ---------- misc ---------- */
