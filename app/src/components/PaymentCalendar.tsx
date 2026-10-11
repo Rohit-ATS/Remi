@@ -48,6 +48,10 @@ export function PaymentCalendar({
   const today = new Date();
   const [cursor, setCursor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
   const [opened, setOpened] = useState<string | null>(null);
+  // The month's list, open by default and closable. On a full month it is
+  // longer than the grid above it, and someone who is reading the grid should
+  // be able to put it away rather than scroll past it.
+  const [listOpen, setListOpen] = useState(true);
 
   const year = cursor.getFullYear();
   const month = cursor.getMonth();
@@ -175,17 +179,34 @@ export function PaymentCalendar({
           Nothing is due in {monthName}. Pick a day to add one, or add one below.
         </p>
       ) : (
-        <ul className="duelist">
-          {occurrences.map((occurrence) => (
-            <DueRow
-              key={`${occurrence.reminder.id}-${toDateKey(occurrence.date)}`}
-              occurrence={occurrence}
-              today={today}
-              onPay={onPay}
-              onRemove={onRemove}
-            />
-          ))}
-        </ul>
+        <div className="duelist__wrap">
+          <button
+            type="button"
+            className="duelist__toggle"
+            aria-expanded={listOpen}
+            onClick={() => setListOpen(!listOpen)}
+          >
+            <span className="duelist__caret" data-open={listOpen} aria-hidden="true">
+              <Chevron direction="right" />
+            </span>
+            All of {monthName}
+            <span className="duelist__count">{occurrences.length}</span>
+          </button>
+
+          {listOpen && (
+            <ul className="duelist">
+              {occurrences.map((occurrence) => (
+                <DueRow
+                  key={`${occurrence.reminder.id}-${toDateKey(occurrence.date)}`}
+                  occurrence={occurrence}
+                  today={today}
+                  onPay={onPay}
+                  onRemove={onRemove}
+                />
+              ))}
+            </ul>
+          )}
+        </div>
       )}
 
     </div>
