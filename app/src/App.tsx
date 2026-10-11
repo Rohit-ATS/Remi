@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, apiIsUnconfigured, type ServerConfig } from "./lib/api.ts";
 import { clearDemoAccount, getStoredAccount, signOut, type StoredAccount } from "./lib/account.ts";
-import { GATED, navigate, routeHref, signInPath, useRoute, useScrollReset, type Route } from "./lib/router.ts";
+import { GATED, navigate, routeHref, signInPath, useLinkNavigation, useRoute, useScrollReset, type Route } from "./lib/router.ts";
 import { AppHeader } from "./components/AppHeader.tsx";
 import { SideNav, TabBar } from "./components/Nav.tsx";
 import { Landing } from "./screens/Landing.tsx";
@@ -49,6 +49,7 @@ export function App() {
     if (config?.network === "mainnet" && clearDemoAccount()) setAccount(null);
   }, [config?.network]);
 
+  useLinkNavigation();
   useScrollReset(route);
 
   const onSignOut = useCallback(() => {
