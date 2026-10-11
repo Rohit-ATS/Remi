@@ -12,7 +12,7 @@ export const NAV: NavItem[] = [
     label: "Product",
     links: [
       { label: "Payouts", blurb: "Say it, confirm with Face ID, it lands", href: "#payouts" },
-      { label: "Books", blurb: "Categories, month totals, 1099 figures", href: "#books" },
+      { label: "Books", blurb: "Categories, month totals, 1099 figures", href: "#payouts" },
       { label: "Passport", blurb: "The income record your contractor owns", href: "#passport" },
       { label: "Advances", blurb: "Underwriting priced on settled history", href: "#advances" },
     ],
@@ -50,8 +50,8 @@ export const STACK: { name: string; role: string; href: string }[] = [
   { name: "Mera", role: "Passkey accounts", href: "#privacy" },
   { name: "WebAuthn PRF", role: "Second key", href: "#privacy" },
   { name: "viem", role: "Chain client", href: "#why" },
-  { name: "Fastify", role: "Index + API", href: "#books" },
-  { name: "SQLite", role: "Payout index", href: "#books" },
+  { name: "Fastify", role: "Index + API", href: "#payouts" },
+  { name: "SQLite", role: "Payout index", href: "#payouts" },
   { name: "Kimi", role: "Narration only", href: "#advances" },
   { name: "React", role: "Interface", href: "#payouts" },
   { name: "AES-GCM", role: "Payee book", href: "#privacy" },
@@ -93,7 +93,7 @@ export const FOOTER: { heading: string; links: { label: string; href: string }[]
     heading: "Product",
     links: [
       { label: "Payouts", href: "#payouts" },
-      { label: "Books", href: "#books" },
+      { label: "Books", href: "#payouts" },
       { label: "Passport", href: "#passport" },
       { label: "Advances", href: "#advances" },
     ],

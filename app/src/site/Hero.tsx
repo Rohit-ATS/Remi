@@ -1,16 +1,28 @@
 import { useState } from "react";
 import { ArrowUpRight, Button, Check } from "./primitives.tsx";
-import { TICKER } from "../data/content.ts";
+import { TICKER } from "./content.ts";
+import { navigate, signInHref } from "../lib/router.ts";
 
-/** The email capture. Validates in the browser; there is no list to post to yet. */
-function Capture({ appUrl }: { appUrl: string }) {
+/**
+ * The front door.
+ *
+ * This used to validate an address and say "noted" to a list that did not
+ * exist. There is an account system one route away now, so a valid address
+ * goes there instead and arrives with the name field already filled: the
+ * button means what it says.
+ */
+function Capture() {
   const [email, setEmail] = useState("");
-  const [state, setState] = useState<"idle" | "error" | "ok">("idle");
+  const [state, setState] = useState<"idle" | "error">("idle");
 
   const submit = (event: React.FormEvent): void => {
     event.preventDefault();
-    const valid = /^[^@\s]+@[^@\s.]+\.[^@\s]{2,}$/.test(email.trim());
-    setState(valid ? "ok" : "error");
+    const trimmed = email.trim();
+    if (!/^[^@\s]+@[^@\s.]+\.[^@\s]{2,}$/.test(trimmed)) {
+      setState("error");
+      return;
+    }
+    navigate(signInHref({ mode: "create", email: trimmed }).slice(1));
   };
 
   return (
@@ -37,27 +49,19 @@ function Capture({ appUrl }: { appUrl: string }) {
       </form>
 
       <p className="capture__note" data-state={state === "idle" ? undefined : state}>
-        {state === "error" && "That does not look like an email address."}
-        {state === "ok" && (
-          <>
-            <Check /> Noted. Remi is open source — you can run it today at{" "}
-            <a href={appUrl} style={{ textDecoration: "underline" }}>
-              the app
-            </a>
-            .
-          </>
-        )}
-        {state === "idle" && "No card, no contract. Your passkey is the whole account."}
+        {state === "error"
+          ? "That does not look like an email address."
+          : "No card, no contract. Your passkey is the whole account."}
       </p>
     </div>
   );
 }
 
-export function Hero({ appUrl }: { appUrl: string }) {
+export function Hero() {
   return (
     <section className="hero" id="top">
       <div className="hero__dots dots" aria-hidden="true" />
-      <div className="shell hero__inner">
+      <div className="site-shell hero__inner">
         <p className="livestat">
           Global average cost to send money abroad:
           <span className="livestat__chip">6.49%</span>
@@ -73,10 +77,10 @@ export function Hero({ appUrl }: { appUrl: string }) {
           — settled in about a second.
         </p>
 
-        <Capture appUrl={appUrl} />
+        <Capture />
       </div>
 
-      <div className="shell">
+      <div className="site-shell">
         <div className="showcase">
           <div className="dots" aria-hidden="true" style={{ position: "absolute", inset: 0, opacity: 0.6 }} />
           <div className="showcase__grid">
@@ -126,7 +130,7 @@ export function Hero({ appUrl }: { appUrl: string }) {
                   <dd>0.9s</dd>
                 </div>
               </dl>
-              <p style={{ marginTop: "1rem", fontSize: "0.82rem", color: "var(--ink-faint)" }}>
+              <p style={{ marginTop: "1rem", fontSize: "0.82rem", color: "var(--faint)" }}>
                 Also written: Maria&rsquo;s 7th record, 3rd client <ArrowUpRight />
               </p>
             </div>

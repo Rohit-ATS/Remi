@@ -1,144 +1,26 @@
-/* Remi marketing frontend.
+/* The landing page: announcement bar, dot-grid hero, scrolling ticker,
+ * bordered stack cells, two-tone headlines, hairline rules instead of shadows.
  *
- * The structure is Ramp's: black announcement bar, a dot-grid hero with a live
- * figure chip, a scrolling agents ticker, bordered logo cells with hover
- * arrows, two-tone headlines, hairline rules instead of shadows.
+ * This was a separate app with its own copy of the palette. It now reads the
+ * same tokens.css and base.css as the dashboard, which is why it has a dark
+ * mode it never had before, and why its buttons are the dashboard's buttons.
  *
- * The accent is not. Ramp's acid lime is replaced by a signal violet that sits
- * on white rather than shouting over it, which flips accent buttons from dark
- * text on bright fill to white text on saturated fill.
+ * Two names carry the seam that is left. The page column is `.site-shell`,
+ * because the product's `.shell` is a 30rem phone column, and the Passport
+ * chart is `.sitebar`, because the product has a bar of its own with a
+ * different grid. Everything else is shared.
  */
 
-:root {
-  /* ground */
-  --white: #ffffff;
-  --paper: #fbfaf9;
-  --panel: #f2f1ef;
-  --panel-deep: #ebe9e6;
-
-  /* ink */
-  --ink: #0e0d0c;
-  --ink-soft: rgba(14, 13, 12, 0.56);
-  --ink-faint: rgba(14, 13, 12, 0.34);
-  --rule: #e4e1dd;
-  --rule-strong: #d2cecb;
-
-  /* accent — replaces Ramp's solar */
-  --accent: #5b4bff;
-  --accent-hover: #4a39f0;
-  --accent-soft: #eeecff;
-  --accent-ring: rgba(91, 75, 255, 0.28);
-  --on-accent: #ffffff;
-
-  /* dark surfaces */
-  --night: #0e0d0c;
-  --on-night: #f6f5f3;
-  --on-night-soft: rgba(246, 245, 243, 0.58);
-
-  --display: "Inter Tight", "Helvetica Neue", Arial, sans-serif;
-  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
-
-  --radius: 8px;
-  --radius-lg: 14px;
-  --nav-h: 68px;
-  --bar-h: 46px;
-  --gutter: clamp(20px, 4vw, 64px);
-  --maxw: 1480px;
-
-  color-scheme: light;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-html {
-  scroll-behavior: smooth;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-  }
-}
-
-body {
-  margin: 0;
-  background: var(--white);
-  color: var(--ink);
-  font-family: var(--body);
-  font-size: 16px;
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
-}
-
-h1,
-h2,
-h3,
-h4 {
-  font-family: var(--display);
-  font-weight: 500;
-  letter-spacing: -0.035em;
-  margin: 0;
-  text-wrap: balance;
-}
-p {
-  margin: 0;
-}
-a {
-  color: inherit;
-  text-decoration: none;
-}
-img,
-svg {
-  max-width: 100%;
-}
-button {
-  font: inherit;
-  color: inherit;
-}
-
-:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-  border-radius: 4px;
-}
-
-.shell {
+/* The landing page column: wide, where the product's `.shell` is a phone. */
+.site-shell {
   max-width: var(--maxw);
   margin-inline: auto;
   padding-inline: var(--gutter);
 }
 
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-/* The dot field behind the hero and inside product panels. */
-.dots {
-  background-image: radial-gradient(var(--rule-strong) 1px, transparent 1px);
-  background-size: 22px 22px;
-  background-position: -1px -1px;
-}
-
 /* ============================ announcement bar ========================== */
+
+
 
 .annbar {
   background: var(--night);
@@ -163,7 +45,7 @@ button {
 .annbar__link {
   text-decoration: underline;
   text-underline-offset: 3px;
-  text-decoration-color: rgba(246, 245, 243, 0.45);
+  text-decoration-color: var(--on-night-soft);
   white-space: nowrap;
 }
 .annbar__link:hover {
@@ -192,7 +74,7 @@ button {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: var(--white);
+  background: var(--paper);
   border-bottom: 1px solid transparent;
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }
@@ -245,7 +127,7 @@ button {
 }
 .nav__trigger svg {
   transition: transform 160ms ease;
-  color: var(--ink-faint);
+  color: var(--faint);
 }
 .nav__item[data-open="true"] .nav__trigger svg {
   transform: rotate(180deg);
@@ -256,13 +138,13 @@ button {
   top: calc(100% + 10px);
   left: 0;
   min-width: 268px;
-  background: var(--white);
+  background: var(--paper);
   border: 1px solid var(--rule);
   border-radius: var(--radius-lg);
   padding: 0.5rem;
   display: grid;
   gap: 2px;
-  box-shadow: 0 18px 44px rgba(14, 13, 12, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 .nav__panel a {
   display: grid;
@@ -279,7 +161,7 @@ button {
 }
 .nav__panel span {
   font-size: 0.82rem;
-  color: var(--ink-soft);
+  color: var(--hushed);
 }
 
 .nav__actions {
@@ -323,7 +205,7 @@ button {
 
 .mobilenav {
   border-bottom: 1px solid var(--rule);
-  background: var(--white);
+  background: var(--paper);
   padding: 0.5rem var(--gutter) 1.1rem;
   display: grid;
   gap: 2px;
@@ -337,63 +219,6 @@ button {
   border-bottom: 0;
 }
 
-/* ================================ buttons =============================== */
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
-  border: 1px solid transparent;
-  border-radius: var(--radius);
-  padding: 0.68rem 1.05rem;
-  font-size: 0.95rem;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 140ms ease, color 140ms ease, border-color 140ms ease,
-    transform 140ms ease;
-}
-.btn:active {
-  transform: translateY(1px);
-}
-.btn[data-variant="accent"] {
-  background: var(--accent);
-  color: var(--on-accent);
-}
-.btn[data-variant="accent"]:hover {
-  background: var(--accent-hover);
-}
-.btn[data-variant="dark"] {
-  background: var(--ink);
-  color: var(--white);
-}
-.btn[data-variant="dark"]:hover {
-  background: #2a2724;
-}
-.btn[data-variant="ghost"] {
-  border-color: var(--rule-strong);
-  color: var(--ink);
-  background: var(--white);
-}
-.btn[data-variant="ghost"]:hover {
-  border-color: var(--ink);
-}
-.btn[data-variant="ghostdark"] {
-  background: var(--accent-soft);
-  color: var(--accent);
-}
-.btn[data-variant="ghostdark"]:hover {
-  background: #e4e0ff;
-}
-.btn[data-variant="onnight"] {
-  background: var(--white);
-  color: var(--ink);
-}
-.btn[data-size="lg"] {
-  padding: 0.85rem 1.3rem;
-  font-size: 1rem;
-}
 
 .arrowlink {
   display: inline-flex;
@@ -438,7 +263,7 @@ button {
   font-size: 0.72rem;
   letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: var(--ink-soft);
+  color: var(--hushed);
   margin-bottom: 1.6rem;
 }
 .livestat__chip {
@@ -458,11 +283,11 @@ button {
 .hero__sub {
   margin-top: 1.4rem;
   font-size: clamp(1.05rem, 1.7vw, 1.35rem);
-  color: var(--ink-soft);
+  color: var(--hushed);
   max-width: 48ch;
 }
 .dotted {
-  border-bottom: 1px dotted var(--ink-faint);
+  border-bottom: 1px dotted var(--faint);
   cursor: help;
 }
 
@@ -492,7 +317,7 @@ button {
   color: var(--ink);
 }
 .capture input::placeholder {
-  color: var(--ink-faint);
+  color: var(--faint);
 }
 .capture input:focus {
   outline: none;
@@ -500,11 +325,11 @@ button {
 .capture__note {
   margin-top: 0.7rem;
   font-size: 0.85rem;
-  color: var(--ink-faint);
+  color: var(--faint);
   max-width: 34rem;
 }
 .capture__note[data-state="error"] {
-  color: #b4342a;
+  color: var(--danger);
 }
 .capture__note[data-state="ok"] {
   color: var(--accent);
@@ -538,7 +363,7 @@ button {
 }
 .showcase__copy p {
   margin-top: 0.7rem;
-  color: var(--ink-soft);
+  color: var(--hushed);
   max-width: 42ch;
 }
 .showcase__list {
@@ -553,7 +378,7 @@ button {
   gap: 0.6rem;
   align-items: flex-start;
   font-size: 0.95rem;
-  color: var(--ink-soft);
+  color: var(--hushed);
 }
 .showcase__list svg {
   flex: none;
@@ -563,14 +388,14 @@ button {
 
 /* the receipt object, the one piece of physical detail in the system */
 .receiptcard {
-  background: var(--white);
+  background: var(--paper);
   border-radius: 10px 10px 0 0;
   padding: 1.5rem 1.4rem 1.8rem;
   position: relative;
   max-width: 24rem;
   margin-inline: auto;
   width: 100%;
-  box-shadow: 0 24px 60px rgba(14, 13, 12, 0.12);
+  box-shadow: var(--shadow-lg);
 }
 .receiptcard::after {
   content: "";
@@ -579,7 +404,7 @@ button {
   right: 0;
   bottom: -11px;
   height: 12px;
-  background: var(--white);
+  background: var(--paper);
   -webkit-mask-image: repeating-linear-gradient(135deg, #000 0 7px, transparent 7px 14px);
   mask-image: repeating-linear-gradient(135deg, #000 0 7px, transparent 7px 14px);
 }
@@ -588,13 +413,6 @@ button {
   justify-content: space-between;
   align-items: flex-start;
   gap: 1rem;
-}
-.eyebrow {
-  font-family: var(--mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
 }
 .stamp {
   font-family: var(--mono);
@@ -630,7 +448,7 @@ button {
   border-bottom: 0;
 }
 .rowline dt {
-  color: var(--ink-soft);
+  color: var(--hushed);
 }
 .rowline dd {
   margin: 0;
@@ -642,7 +460,7 @@ button {
 
 .ticker {
   border-block: 1px solid var(--rule);
-  background: var(--white);
+  background: var(--paper);
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -661,7 +479,7 @@ button {
   color: var(--ink);
   border-right: 1px solid var(--rule);
   align-self: stretch;
-  background: var(--white);
+  background: var(--paper);
   z-index: 2;
 }
 .ticker__viewport {
@@ -696,7 +514,7 @@ button {
   font-size: 0.7rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--ink-soft);
+  color: var(--hushed);
   white-space: nowrap;
 }
 .ticker__value {
@@ -723,11 +541,11 @@ button {
 /* Ramp's two-tone headline: the claim in ink, the qualifier in grey. */
 .section__head em {
   font-style: normal;
-  color: var(--ink-faint);
+  color: var(--faint);
 }
 .section__lead {
   margin-top: 1.1rem;
-  color: var(--ink-soft);
+  color: var(--hushed);
   max-width: 54ch;
   font-size: 1.05rem;
 }
@@ -743,7 +561,7 @@ button {
   border: 1px solid var(--rule);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  background: var(--white);
+  background: var(--paper);
 }
 @media (max-width: 1080px) {
   .cells {
@@ -767,14 +585,14 @@ button {
   transition: background 160ms ease;
 }
 .cell:hover {
-  background: var(--paper);
+  background: var(--canvas);
 }
 .cell__name {
   font-family: var(--display);
   font-weight: 600;
   font-size: 1.02rem;
   letter-spacing: -0.02em;
-  color: var(--ink-faint);
+  color: var(--faint);
   transition: color 160ms ease;
 }
 .cell:hover .cell__name {
@@ -787,7 +605,7 @@ button {
   font-size: 0.64rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--ink-faint);
+  color: var(--faint);
 }
 .cell__arrow {
   position: absolute;
@@ -859,7 +677,7 @@ button {
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(120% 90% at 80% 0%, rgba(91, 75, 255, 0.55), transparent 62%);
+  background: radial-gradient(120% 90% at 80% 0%, var(--accent-glow), transparent 62%);
   z-index: -1;
 }
 .spotlight__figure {
@@ -888,7 +706,7 @@ button {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: rgba(246, 245, 243, 0.16);
+  background: var(--on-night-dim);
   display: grid;
   place-items: center;
   color: var(--on-night);
@@ -918,7 +736,7 @@ button {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  background: var(--white);
+  background: var(--paper);
   transition: border-color 160ms ease, transform 160ms ease;
 }
 .tile:hover {
@@ -948,7 +766,7 @@ button {
   letter-spacing: -0.025em;
 }
 .tile p {
-  color: var(--ink-soft);
+  color: var(--hushed);
   font-size: 0.95rem;
 }
 .tile__foot {
@@ -958,7 +776,7 @@ button {
   font-size: 0.66rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--ink-faint);
+  color: var(--faint);
 }
 
 /* ============================== split rows ============================== */
@@ -996,12 +814,12 @@ button {
 }
 .split p {
   margin-top: 0.9rem;
-  color: var(--ink-soft);
+  color: var(--hushed);
   max-width: 44ch;
 }
 
 .keycard {
-  background: var(--white);
+  background: var(--paper);
   border: 1px solid var(--rule);
   border-radius: 10px;
   padding: 1.1rem;
@@ -1025,37 +843,37 @@ button {
 .keycard p {
   margin: 0;
   font-size: 0.88rem;
-  color: var(--ink-soft);
+  color: var(--hushed);
 }
 
-.bars {
+.sitebars {
   display: grid;
   gap: 0.5rem;
   width: 100%;
 }
-.bar {
+.sitebar {
   display: grid;
   grid-template-columns: 4.2rem 1fr auto;
   gap: 0.7rem;
   align-items: center;
 }
-.bar__t {
+.sitebar__t {
   font-family: var(--mono);
   font-size: 0.72rem;
-  color: var(--ink-soft);
+  color: var(--hushed);
 }
-.bar__track {
+.sitebar__track {
   height: 0.55rem;
   background: var(--panel-deep);
   border-radius: 3px;
   overflow: hidden;
 }
-.bar__fill {
+.sitebar__fill {
   height: 100%;
   background: var(--accent);
   border-radius: 3px;
 }
-.bar__a {
+.sitebar__a {
   font-family: var(--mono);
   font-variant-numeric: tabular-nums;
   font-size: 0.8rem;
@@ -1097,13 +915,13 @@ button {
 }
 .statrow p {
   margin-top: 0.6rem;
-  color: var(--ink-soft);
+  color: var(--hushed);
   font-size: 0.94rem;
 }
 .statrow small {
   display: block;
   margin-top: 0.5rem;
-  color: var(--ink-faint);
+  color: var(--faint);
   font-size: 0.78rem;
 }
 
@@ -1122,7 +940,7 @@ button {
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(90% 120% at 100% 0%, rgba(91, 75, 255, 0.5), transparent 60%);
+  background: radial-gradient(90% 120% at 100% 0%, var(--accent-glow), transparent 60%);
   z-index: -1;
 }
 .cta h2 {
@@ -1170,7 +988,7 @@ button {
   font-size: 0.68rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--ink-faint);
+  color: var(--faint);
   font-weight: 500;
 }
 .footer__col ul {
@@ -1182,14 +1000,14 @@ button {
 }
 .footer__col a {
   font-size: 0.93rem;
-  color: var(--ink-soft);
+  color: var(--hushed);
 }
 .footer__col a:hover {
   color: var(--ink);
 }
 .footer__blurb {
   margin-top: 0.9rem;
-  color: var(--ink-soft);
+  color: var(--hushed);
   font-size: 0.92rem;
   max-width: 34ch;
 }
@@ -1201,6 +1019,27 @@ button {
   justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
-  color: var(--ink-faint);
+  color: var(--faint);
   font-size: 0.84rem;
+}
+
+/* ---------- signed-in nav ---------- */
+
+/* Whose dashboard the "Open dashboard" button leads to. Hidden with the rest
+   of the desktop nav actions on a phone, where the button alone is enough. */
+.nav__who {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--hushed);
+  max-width: 14ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 1080px) {
+  .nav__who {
+    display: none;
+  }
 }

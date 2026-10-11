@@ -1,145 +1,16 @@
-/* Remi product design system.
+
+
+/* The product half of Remi: the signed-in dashboard, Books, Passport and the
+ * shared receipt.
  *
- * The same token set as the marketing site in frontend/, so the product and
- * the pitch read as one thing: white ground, warm near-black ink, hairline
- * rules instead of shadows, and a signal violet accent. Figures are always
- * monospace and tabular — a column of money that does not line up reads as
- * sloppy in a product whose whole claim is that the numbers are right.
+ * Tokens come from tokens.css and the reset, type scale and button from
+ * base.css, both of which the landing page in site.css reads too — so a change
+ * to the accent or the button shape moves the whole product at once.
  *
- * Mobile-first at 390px. Every colour is a token so both themes stay in step.
+ * Mobile-first at 390px. Figures are always monospace and tabular: a column of
+ * money that does not line up reads as sloppy in a product whose whole claim is
+ * that the numbers are right.
  */
-
-:root {
-  --paper: #ffffff;
-  --canvas: #fbfaf9;
-  --card: #ffffff;
-  --panel: #f2f1ef;
-  --panel-deep: #ebe9e6;
-  --ink: #0e0d0c;
-  --hushed: rgba(14, 13, 12, 0.56);
-  --faint: rgba(14, 13, 12, 0.34);
-  --rule: #e4e1dd;
-  --rule-strong: #d2cecb;
-
-  --accent: #5b4bff;
-  --accent-hover: #4a39f0;
-  --accent-soft: #eeecff;
-  --accent-ring: rgba(91, 75, 255, 0.28);
-  --on-accent: #ffffff;
-
-  --deep: #0e0d0c;
-  --on-deep: #f6f5f3;
-  --on-deep-soft: rgba(246, 245, 243, 0.58);
-
-  --good: #1a6b4a;
-  --danger: #a32e26;
-
-  --display: "Inter Tight", "Helvetica Neue", Arial, sans-serif;
-  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
-
-  --radius: 10px;
-  --tap: 44px;
-
-  color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --paper: #0d0e10;
-    --canvas: #111214;
-    --card: #17181b;
-    --panel: #1c1e21;
-    --panel-deep: #24262a;
-    --ink: #f3f3f4;
-    --hushed: rgba(243, 243, 244, 0.6);
-    --faint: rgba(243, 243, 244, 0.36);
-    --rule: #26282c;
-    --rule-strong: #34373c;
-    --accent: #8d81ff;
-    --accent-hover: #a096ff;
-    --accent-soft: rgba(141, 129, 255, 0.16);
-    --accent-ring: rgba(141, 129, 255, 0.3);
-    --on-accent: #0d0e10;
-    --deep: #17181b;
-    --good: #52b98b;
-    --danger: #e26855;
-    color-scheme: dark;
-  }
-}
-
-:root[data-theme="dark"] {
-  --paper: #0d0e10;
-  --canvas: #111214;
-  --card: #17181b;
-  --panel: #1c1e21;
-  --panel-deep: #24262a;
-  --ink: #f3f3f4;
-  --hushed: rgba(243, 243, 244, 0.6);
-  --faint: rgba(243, 243, 244, 0.36);
-  --rule: #26282c;
-  --rule-strong: #34373c;
-  --accent: #8d81ff;
-  --accent-hover: #a096ff;
-  --accent-soft: rgba(141, 129, 255, 0.16);
-  --accent-ring: rgba(141, 129, 255, 0.3);
-  --on-accent: #0d0e10;
-  --deep: #17181b;
-  --good: #52b98b;
-  --danger: #e26855;
-  color-scheme: dark;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-html,
-body {
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  background: var(--paper);
-  color: var(--ink);
-  font-family: var(--body);
-  font-size: 16px;
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-  padding-top: env(safe-area-inset-top, 0px);
-}
-
-h1,
-h2,
-h3 {
-  font-family: var(--display);
-  letter-spacing: -0.03em;
-  margin: 0;
-  text-wrap: balance;
-}
-h1 {
-  font-weight: 600;
-  font-size: 2rem;
-  line-height: 1.04;
-}
-h2 {
-  font-weight: 600;
-  font-size: 1.35rem;
-}
-h3 {
-  font-weight: 600;
-  font-size: 1rem;
-  letter-spacing: -0.015em;
-}
-p {
-  margin: 0;
-}
-
-a {
-  color: var(--accent);
-  text-underline-offset: 2px;
-}
 
 /* ---------- shell ---------- */
 
@@ -154,22 +25,32 @@ a {
   max-width: 48rem;
 }
 
+/* base.css leaves anchors inheriting their colour, which is what the landing
+   page wants. In the product an unclassed link is a link. */
+.shell a:not([class]) {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .topbar {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.6rem;
   padding-block: 0.5rem 1.25rem;
 }
+.topbar__spacer {
+  margin-left: auto;
+}
 .topbar .mark {
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: 1.25rem;
-  letter-spacing: -0.045em;
+  display: inline-flex;
+  align-items: center;
   margin-right: auto;
 }
-.topbar .mark a {
-  color: inherit;
-  text-decoration: none;
+/* The wordmark is the site's, so the product and the landing page open with
+   the same two marks in the same place. */
+.topbar .mark .wordmark {
+  font-size: 1.3rem;
 }
 
 /* ---------- tab bar ---------- */
@@ -216,27 +97,6 @@ a {
 
 /* ---------- type utilities ---------- */
 
-.eyebrow {
-  font-family: var(--mono);
-  font-size: 0.68rem;
-  font-weight: 500;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--hushed);
-}
-.hushed {
-  color: var(--hushed);
-}
-.faint {
-  color: var(--faint);
-}
-.small {
-  font-size: 0.85rem;
-}
-.mono {
-  font-family: var(--mono);
-  font-variant-numeric: tabular-nums;
-}
 .figure {
   font-family: var(--mono);
   font-variant-numeric: tabular-nums;
@@ -263,52 +123,6 @@ a {
   gap: 1rem;
 }
 
-/* ---------- controls ---------- */
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  min-height: var(--tap);
-  padding: 0.7rem 1.1rem;
-  font-family: var(--body);
-  font-size: 1rem;
-  font-weight: 500;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  text-decoration: none;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.btn-primary {
-  background: var(--ink);
-  color: var(--paper);
-}
-.btn-accent {
-  background: var(--accent);
-  color: var(--on-accent);
-}
-.btn-ghost {
-  background: transparent;
-  border-color: var(--rule);
-  color: var(--ink);
-}
-.btn-block {
-  width: 100%;
-}
-.btn:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible,
-a:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
 
 .field {
   display: grid;
@@ -700,26 +514,7 @@ td.n {
     transform: rotate(360deg);
   }
 }
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation: none !important;
-    transition: none !important;
-  }
-}
 
 /* ---------- dashboard ---------- */
 
@@ -849,7 +644,7 @@ td.n {
 .sectionhead h2 {
   font-size: 1.1rem;
 }
-.sectionhead a {
+.shell .sectionhead a {
   font-size: 0.85rem;
   color: var(--accent);
   text-decoration: none;
@@ -929,4 +724,29 @@ td.n {
 .avatar:hover {
   background: var(--accent);
   color: var(--on-accent);
+}
+
+/* ---------- sign-in ---------- */
+
+/* The three reassurances under the passkey button. The same checkmark and the
+   same accent as the landing page's hero list, because it is the same claim
+   being made twice on the way in. */
+.signin-points {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.55rem;
+}
+.signin-points li {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  font-size: 0.9rem;
+  color: var(--hushed);
+}
+.signin-points svg {
+  flex: none;
+  margin-top: 4px;
+  color: var(--accent);
 }

@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Burger, Button, Chevron, Close, Wordmark } from "./primitives.tsx";
-import { NAV, type NavItem } from "../data/content.ts";
+import { NAV, type NavItem } from "./content.ts";
+import type { StoredAccount } from "../lib/account.ts";
+import { signInHref } from "../lib/router.ts";
+import { ThemeToggle } from "../components/ThemeToggle.tsx";
 
 /** The black announcement strip. Dismissible, and it stays dismissed. */
 export function AnnouncementBar() {
@@ -87,7 +90,7 @@ function Dropdown({ item }: { item: NavItem }) {
   );
 }
 
-export function Nav({ appUrl }: { appUrl: string }) {
+export function Nav({ account }: { account: StoredAccount | null }) {
   const [stuck, setStuck] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -100,7 +103,7 @@ export function Nav({ appUrl }: { appUrl: string }) {
 
   return (
     <header className="nav" data-stuck={stuck}>
-      <div className="shell nav__inner">
+      <div className="site-shell nav__inner">
         <a href="#top" aria-label="Remi home">
           <Wordmark />
         </a>
@@ -122,15 +125,29 @@ export function Nav({ appUrl }: { appUrl: string }) {
         </button>
 
         <div className="nav__actions">
-          <a className="nav__signin" href={appUrl}>
-            Sign in
-          </a>
-          <Button variant="ghostdark" href="#how">
-            See how it works
-          </Button>
-          <Button variant="dark" href={appUrl}>
-            Get started
-          </Button>
+          <ThemeToggle />
+          {account === null ? (
+            <>
+              <a className="nav__signin" href={signInHref({ mode: "signin" })}>
+                Sign in
+              </a>
+              <Button variant="ghostdark" href="#how">
+                See how it works
+              </Button>
+              <Button variant="dark" href={signInHref({ mode: "create" })}>
+                Get started
+              </Button>
+            </>
+          ) : (
+            <>
+              <span className="nav__who" title={account.address}>
+                {account.label}
+              </span>
+              <Button variant="dark" href="#/app">
+                Open dashboard
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -141,7 +158,20 @@ export function Nav({ appUrl }: { appUrl: string }) {
               {item.label}
             </a>
           ))}
-          <a href={appUrl}>Sign in</a>
+          {account === null ? (
+            <>
+              <a href={signInHref({ mode: "signin" })} onClick={() => setMobileOpen(false)}>
+                Sign in
+              </a>
+              <a href={signInHref({ mode: "create" })} onClick={() => setMobileOpen(false)}>
+                Get started
+              </a>
+            </>
+          ) : (
+            <a href="#/app" onClick={() => setMobileOpen(false)}>
+              Open dashboard
+            </a>
+          )}
         </div>
       )}
     </header>

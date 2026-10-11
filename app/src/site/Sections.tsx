@@ -1,5 +1,7 @@
 import { ArrowLink, ArrowUpRight, Button, Check } from "./primitives.tsx";
-import { FOOTER, STACK, TILES } from "../data/content.ts";
+import { FOOTER, STACK, TILES } from "./content.ts";
+import type { StoredAccount } from "../lib/account.ts";
+import { signInHref } from "../lib/router.ts";
 
 /**
  * The bordered cell grid. Ramp fills this with customer logos; Remi has no
@@ -8,7 +10,7 @@ import { FOOTER, STACK, TILES } from "../data/content.ts";
  */
 export function StackGrid() {
   return (
-    <section className="section shell" id="how">
+    <section className="section site-shell" id="how">
       <h2 className="section__head">
         Built on five pieces, <em>each doing one job well.</em>
       </h2>
@@ -50,7 +52,7 @@ export function StackGrid() {
 
 export function Numbers() {
   return (
-    <section className="section--tight shell">
+    <section className="section--tight site-shell">
       <div className="statrow">
         <div>
           <b>6.49%</b>
@@ -77,7 +79,7 @@ export function Numbers() {
 
 export function Tiles() {
   return (
-    <section className="section shell" id="payouts">
+    <section className="section site-shell" id="payouts">
       <h2 className="section__head">
         One platform for the whole payout. <em>Four surfaces over one stream of records.</em>
       </h2>
@@ -101,7 +103,7 @@ export function Tiles() {
 
 export function Passport() {
   return (
-    <section className="section shell" id="passport">
+    <section className="section site-shell" id="passport">
       <div className="split">
         <div>
           <h2>Every payout writes an income record the worker owns.</h2>
@@ -131,7 +133,7 @@ export function Passport() {
               <strong style={{ fontFamily: "var(--display)", fontSize: "1.2rem" }}>Maria S.</strong>
               <span className="eyebrow">Verified · 7 records</span>
             </div>
-            <div className="bars">
+            <div className="sitebars">
               {[
                 { month: "Jun", width: 62, amount: "$600" },
                 { month: "Jul", width: 98, amount: "$950" },
@@ -139,16 +141,16 @@ export function Passport() {
                 { month: "Sep", width: 100, amount: "$975" },
                 { month: "Oct", width: 41, amount: "$400" },
               ].map((row) => (
-                <div className="bar" key={row.month}>
-                  <span className="bar__t">{row.month}</span>
-                  <span className="bar__track">
-                    <span className="bar__fill" style={{ width: `${row.width}%` }} />
+                <div className="sitebar" key={row.month}>
+                  <span className="sitebar__t">{row.month}</span>
+                  <span className="sitebar__track">
+                    <span className="sitebar__fill" style={{ width: `${row.width}%` }} />
                   </span>
-                  <span className="bar__a">{row.amount}</span>
+                  <span className="sitebar__a">{row.amount}</span>
                 </div>
               ))}
             </div>
-            <p style={{ marginTop: "1.1rem", fontSize: "0.82rem", color: "var(--ink-faint)" }}>
+            <p style={{ marginTop: "1.1rem", fontSize: "0.82rem", color: "var(--faint)" }}>
               Example figures. Every line traces to a settled payout anyone can check, and Maria
               decides who gets the link.
             </p>
@@ -161,7 +163,7 @@ export function Passport() {
 
 export function Privacy() {
   return (
-    <section className="section shell" id="privacy">
+    <section className="section site-shell" id="privacy">
       <div className="split split--flip">
         <div>
           <h2>One passkey. Two keys. The worker holds the second.</h2>
@@ -192,7 +194,7 @@ export function Privacy() {
                 are amounts and dates attached to nobody.
               </p>
             </div>
-            <p style={{ marginTop: "1rem", fontSize: "0.8rem", color: "var(--ink-faint)", textAlign: "center" }}>
+            <p style={{ marginTop: "1rem", fontSize: "0.8rem", color: "var(--faint)", textAlign: "center" }}>
               both derived from the same Face ID · neither is ever stored
             </p>
           </div>
@@ -204,7 +206,7 @@ export function Privacy() {
 
 export function WhyMonad() {
   return (
-    <section className="section shell" id="why">
+    <section className="section site-shell" id="why">
       <h2 className="section__head">
         Why this needs a chain at all. <em>Not the reason you expect.</em>
       </h2>
@@ -244,7 +246,7 @@ export function WhyMonad() {
 
 export function Advances() {
   return (
-    <section className="section shell" id="advances">
+    <section className="section site-shell" id="advances">
       <div className="split">
         <div>
           <h2>The assistant does not guess. It underwrites.</h2>
@@ -273,8 +275,8 @@ export function Advances() {
             >
               84
             </p>
-            <p style={{ color: "var(--ink-faint)", fontSize: "0.85rem" }}>out of 100</p>
-            <p style={{ marginTop: "1.2rem", color: "var(--ink-soft)", fontSize: "0.92rem" }}>
+            <p style={{ color: "var(--faint)", fontSize: "0.85rem" }}>out of 100</p>
+            <p style={{ marginTop: "1.2rem", color: "var(--hushed)", fontSize: "0.92rem" }}>
               10 settled payouts from 2 clients across 5 months. Monthly amounts are consistent.
             </p>
             <p style={{ marginTop: "0.9rem", fontSize: "0.85rem", color: "var(--accent)" }}>
@@ -287,9 +289,9 @@ export function Advances() {
   );
 }
 
-export function CTA({ appUrl }: { appUrl: string }) {
+export function CTA({ account }: { account: StoredAccount | null }) {
   return (
-    <section className="section--tight shell">
+    <section className="section--tight site-shell">
       <div className="cta">
         <span className="eyebrow" style={{ color: "var(--on-night-soft)" }}>
           Remi
@@ -301,8 +303,8 @@ export function CTA({ appUrl }: { appUrl: string }) {
           The payout is the wedge. The income record is the product. The underwriting is the company.
         </p>
         <div className="cta__actions">
-          <Button variant="accent" size="lg" href={appUrl}>
-            Open the app
+          <Button variant="accent" size="lg" href={account === null ? signInHref({ mode: "create" }) : "#/app"}>
+            {account === null ? "Set up with Face ID" : "Open your dashboard"}
           </Button>
           <Button variant="onnight" size="lg" href="https://github.com/Rohit-ATS/Remi">
             Read the source
@@ -313,10 +315,10 @@ export function CTA({ appUrl }: { appUrl: string }) {
   );
 }
 
-export function Footer({ appUrl }: { appUrl: string }) {
+export function Footer({ account }: { account: StoredAccount | null }) {
   return (
     <footer className="footer">
-      <div className="shell">
+      <div className="site-shell">
         <div className="footer__cols">
           <div className="footer__col">
             <a href="#top" aria-label="Remi home">
@@ -327,7 +329,9 @@ export function Footer({ appUrl }: { appUrl: string }) {
               AUSD on Monad. Remi never holds a key and never takes custody of funds.
             </p>
             <div style={{ marginTop: "1.2rem" }}>
-              <ArrowLink href={appUrl}>Open the app</ArrowLink>
+              <ArrowLink href={account === null ? signInHref({ mode: "create" }) : "#/app"}>
+                {account === null ? "Get started" : "Open your dashboard"}
+              </ArrowLink>
             </div>
           </div>
 
