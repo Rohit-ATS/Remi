@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api, type Payout, type ServerConfig } from "../lib/api.ts";
 import type { StoredAccount } from "../lib/account.ts";
 import { formatDate, formatExact, formatUsd, shortAddress } from "../lib/money.ts";
+import { AppHeader } from "../components/AppHeader.tsx";
 
 /**
  * A settled payout.
