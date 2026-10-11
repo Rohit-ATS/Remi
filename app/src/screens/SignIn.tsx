@@ -3,6 +3,7 @@ import {
   createAccount,
   createDemoAccount,
   describeError,
+  LOCAL_CHAIN_KEY,
   signIn,
   type StoredAccount,
 } from "../lib/account.ts";
@@ -50,7 +51,12 @@ export function SignIn({
           ? await createAccount(name.trim() || "My business")
           : which === "signin"
             ? await signIn()
-            : createDemoAccount(name.trim() || "Demo business");
+            : createDemoAccount(
+                name.trim() || "Demo business",
+                // On a local chain, be the account `npm run demo` wrote its
+                // history for. Anywhere else, a fresh key of this browser's own.
+                local ? LOCAL_CHAIN_KEY : undefined,
+              );
       onSignedIn(account);
       navigate(next);
     } catch (caught) {
@@ -61,6 +67,7 @@ export function SignIn({
   };
 
   const creating = mode === "create";
+  const local = config?.network === "local";
 
   return (
     <main className="shell">
@@ -131,8 +138,9 @@ export function SignIn({
             {busy === "demo" ? <span className="spinner" /> : "Skip Face ID — open a demo account"}
           </button>
           <p className="small faint" style={{ margin: 0 }}>
-            No passkey. The key is generated here and kept in this browser, so use it to look
-            around, not to hold real money.
+            {local
+              ? "No passkey. Opens the local chain's demo account, so anything `npm run demo` wrote is already there."
+              : "No passkey. The key is generated here and kept in this browser, so use it to look around, not to hold real money."}
           </p>
         </div>
 
