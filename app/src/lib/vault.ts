@@ -18,7 +18,7 @@
 // The key is derived per operation and never stored.
 
 import { getPasskeyPrfOutput } from "@category-labs/mera";
-import { PAYEE_BOOK_SALT_INPUT, type StoredAccount } from "./account.ts";
+import { demoPrfOutput, PAYEE_BOOK_SALT_INPUT, type StoredAccount } from "./account.ts";
 
 export type PayeeEntry = {
   label: string;
@@ -68,6 +68,14 @@ async function payeeBookSalt(): Promise<Uint8Array> {
  * CryptoKey, so nothing in the app can accidentally log or transmit them.
  */
 async function deriveKey(account: StoredAccount): Promise<CryptoKey> {
+  // A demo account has no passkey to ask, but it still has a distinct secret
+  // per salt, so the payee book is encrypted exactly as it otherwise would be.
+  if (account.demo === true) {
+    const secret = await demoPrfOutput(await payeeBookSalt());
+    if (secret === null) throw new Error("This demo account's key is missing.");
+    return importAesKey(secret);
+  }
+
   const { prfOutput } = await getPasskeyPrfOutput({
     rpId: location.hostname,
     credential: {
@@ -77,13 +85,17 @@ async function deriveKey(account: StoredAccount): Promise<CryptoKey> {
     prfSalt: await payeeBookSalt(),
   });
 
+  return importAesKey(prfOutput);
+}
+
+async function importAesKey(secret: Uint8Array<ArrayBuffer>): Promise<CryptoKey> {
   try {
-    return await crypto.subtle.importKey("raw", prfOutput, { name: "AES-GCM" }, false, [
+    return await crypto.subtle.importKey("raw", secret, { name: "AES-GCM" }, false, [
       "encrypt",
       "decrypt",
     ]);
   } finally {
-    prfOutput.fill(0);
+    secret.fill(0);
   }
 }
 
