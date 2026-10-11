@@ -25,6 +25,7 @@ function row(over: Partial<PayoutRow> & { dollars?: number }): PayoutRow {
     tx_hash: "0xdead",
     block_number: 1,
     ...rest,
+    block_hash: rest.block_hash ?? "0xblock1",
   };
 }
 

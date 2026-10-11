@@ -76,12 +76,16 @@ amounts settled without revealing who their clients are.
 
 ## Passport integrity
 
-An ordinary wallet transfer is settlement, not an income credential. The
-contract administrator attests a business before that business's payouts can
-increase a worker's Passport. This prevents a circle of wallets controlled by
-one person from manufacturing a score or illustrative advance by passing the
-same funds around. Use a dedicated multisig for `PAYOUTS_ADMIN`, and only add a
-payer after the review process appropriate for your launch.
+An ordinary wallet transfer is settlement, not an income credential. A Passport
+credit now requires an administrator's one-time EIP-712 attestation bound to the
+specific payer, recipient, amount, nonce, deadline, chain, and Remi contract.
+That prevents a previously reviewed business from crediting an arbitrary wallet
+it controls, or replaying a prior approval. The operator must verify the real
+payment relationship before issuing an attestation; no smart contract can prove
+that two off-chain identities are independent. Use a dedicated protected
+attestation signer with a documented rotation process. The older
+`setTrustedPayer` registry remains operator metadata and does not by itself
+make a payout Passport-eligible.
 
 Local and testnet records use freely mintable DemoUSD and are explicitly demo
 data: Remi displays their settlement activity but never a credit-facing score
@@ -180,9 +184,18 @@ to the exact public URL Render assigns to `remi-app`; then set `VITE_API_BASE`
 to the exact public URL of `remi-api` and deploy the static app again.
 
 Do not configure `PRIVATE_KEY` on the API. It cannot and must not sign payouts.
-The optional Kimi integration is disabled by default even with a key; retain the
-local assistant unless you put an edge rate limit and a provider spending cap in
-front of the API, then explicitly set `KIMI_REMOTE_ENABLED=true`.
+The optional Kimi integration is disabled by default even with a key. Retain the
+local assistant unless an authenticated edge rate-limits callers and injects a
+secret `ASSISTANT_EDGE_TOKEN`; then configure `KIMI_API_KEY`,
+`KIMI_DAILY_REQUEST_LIMIT`, and `KIMI_REMOTE_ENABLED=true`. The API rejects
+remote use without that secret and enforces the daily ceiling in its persistent
+SQLite volume. Direct browser requests continue to receive the local computed
+answer. Also set `INDEX_FINALITY_BLOCKS` (2 on testnet, 12 default on mainnet)
+and keep the persistent disk: receipts are shown only after the confirmation
+horizon and the indexer checks recent block hashes for reorganizations.
+`REORG_LOOKBACK_BLOCKS` may not be set below the confirmation horizon; a reorg
+deeper than the selected chain-finality policy is an operator incident, not a
+record the API can safely continue to treat as canonical.
 
 ## Layout
 

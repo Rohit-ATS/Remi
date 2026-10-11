@@ -24,6 +24,7 @@ export type IndexerStatus = {
   running: boolean;
   cursor: string;
   head: string | null;
+  finalizedHead: string | null;
   lastError: string | null;
   lastRunAt: number | null;
 };
@@ -35,6 +36,7 @@ export class Indexer {
     running: false,
     cursor: "0",
     head: null,
+    finalizedHead: null,
     lastError: null,
     lastRunAt: null,
   };
@@ -93,9 +95,31 @@ export class Indexer {
       const head = await this.client.getBlockNumber();
       this.status.head = head.toString();
 
+      // Latest logs are provisional. Only add a block to the public projection
+      // once it is behind the configured confirmation horizon.
+      if (head < this.config.finalityBlocks) {
+        this.status.finalizedHead = null;
+        this.status.lastError = null;
+        return;
+      }
+      const finalizedHead = head - this.config.finalityBlocks;
+      this.status.finalizedHead = finalizedHead.toString();
+
       let cursor = this.store.getCursor(this.config.startBlock);
-      while (cursor <= head) {
-        const to = cursor + this.config.logChunk - 1n > head ? head : cursor + this.config.logChunk - 1n;
+      // A previously optimistic configuration/database may have advanced past
+      // today's finality horizon. Remove that provisional tail before serving
+      // another request under the stricter policy.
+      if (cursor > finalizedHead + 1n) {
+        this.store.rewindFrom(finalizedHead + 1n);
+        cursor = finalizedHead + 1n;
+        this.log(`removed provisional index tail above finalized block ${finalizedHead}`);
+      }
+      cursor = await this.reconcile(cursor, finalizedHead);
+      while (cursor <= finalizedHead) {
+        const to =
+          cursor + this.config.logChunk - 1n > finalizedHead
+            ? finalizedHead
+            : cursor + this.config.logChunk - 1n;
         await this.ingestRange(address, cursor, to);
         this.store.setCursor(to + 1n);
         cursor = to + 1n;
@@ -110,6 +134,48 @@ export class Indexer {
       this.status.lastRunAt = Date.now();
       this.busy = false;
     }
+  }
+
+  /**
+   * Reorgs are unusual after the finality horizon, but the read model is
+   * credit-facing and must not retain a removed event. Compare persisted block
+   * hashes in a bounded trailing window; on any mismatch remove the suffix and
+   * replay it from the canonical RPC response. The confirmation horizon is the
+   * canonicality boundary: a reorg deeper than that chain-specific policy is a
+   * finality-assumption failure and needs operator incident handling.
+   */
+  private async reconcile(cursor: bigint, finalizedHead: bigint): Promise<bigint> {
+    if (cursor <= this.config.startBlock) return cursor;
+    // A database created before block-hash tracking has no proof that its rows
+    // are canonical. Replay its earliest legacy suffix once rather than leaving
+    // unverified receipts behind merely because they predate the lookback.
+    const legacyBlock = this.store.firstMissingBlockHash();
+    if (legacyBlock !== null) {
+      this.store.rewindFrom(legacyBlock);
+      this.log(`legacy block hash missing at ${legacyBlock}; replaying indexed suffix`);
+      return legacyBlock;
+    }
+    const lookbackStart =
+      cursor > this.config.reorgLookbackBlocks
+        ? cursor - this.config.reorgLookbackBlocks
+        : this.config.startBlock;
+    const earliest = lookbackStart < this.config.startBlock ? this.config.startBlock : lookbackStart;
+    const stored = this.store.blockHashesSince(earliest);
+
+    for (const checkpoint of stored) {
+      if (checkpoint.blockNumber > finalizedHead) continue;
+      const canonical = await this.client.getBlock({ blockNumber: checkpoint.blockNumber });
+      if (
+        checkpoint.blockHash === "" ||
+        canonical.hash === null ||
+        canonical.hash.toLowerCase() !== checkpoint.blockHash.toLowerCase()
+      ) {
+        this.store.rewindFrom(checkpoint.blockNumber);
+        this.log(`canonical block changed at ${checkpoint.blockNumber}; replaying indexed suffix`);
+        return checkpoint.blockNumber;
+      }
+    }
+    return cursor;
   }
 
   private async ingestRange(address: `0x${string}`, fromBlock: bigint, toBlock: bigint): Promise<void> {
@@ -132,6 +198,7 @@ export class Indexer {
         timestamp: Number(a.timestamp ?? 0n),
         tx_hash: log.transactionHash ?? "",
         block_number: Number(log.blockNumber ?? 0n),
+        block_hash: log.blockHash ?? "",
       });
     }
 

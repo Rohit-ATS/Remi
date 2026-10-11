@@ -3,6 +3,7 @@
 // chain, aggregates, and narrates.
 
 import type { FastifyInstance } from "fastify";
+import { timingSafeEqual } from "node:crypto";
 import type { Config } from "./config.ts";
 import type { Store } from "./db.ts";
 import type { Indexer } from "./indexer.ts";
@@ -23,6 +24,21 @@ export function parsePayoutLimit(value: string | undefined): number | null {
   const parsed = Number(value);
   if (!Number.isSafeInteger(parsed) || parsed < 1) return null;
   return Math.min(parsed, MAX_PAYOUTS);
+}
+
+/**
+ * Remote-model authorization is an operator-to-API credential, not a browser
+ * credential. The public SPA never receives it; an authenticated edge injects
+ * it after applying its own global admission controls.
+ */
+export function hasAssistantEdgeToken(
+  provided: string | string[] | undefined,
+  expected: string | null,
+): boolean {
+  if (expected === null || typeof provided !== "string") return false;
+  const candidate = Buffer.from(provided);
+  const secret = Buffer.from(expected);
+  return candidate.length === secret.length && timingSafeEqual(candidate, secret);
 }
 
 export function registerRoutes(
@@ -57,11 +73,6 @@ export function registerRoutes(
     categories: CATEGORIES,
     faucet: config.network === "local" && config.devMintKey !== null,
   }));
-
-  app.post("/api/reindex", async () => {
-    await indexer.runOnce();
-    return { ok: true, indexer: indexer.getStatus() };
-  });
 
   /**
    * Local-chain faucet. Gated twice: the route refuses off a local chain, and
@@ -195,7 +206,18 @@ export function registerRoutes(
     }
     try {
       const rows = store.payoutsByPayer(owner, 500);
-      return await answer(question.trim(), rows, config);
+      const canUseRemote =
+        config.kimi.enabled &&
+        config.kimi.dailyRequestLimit !== null &&
+        hasAssistantEdgeToken(req.headers["x-remi-assistant-token"], config.kimi.edgeToken) &&
+        store.consumeAssistantBudget(new Date().toISOString().slice(0, 10), config.kimi.dailyRequestLimit);
+      // Requests that did not pass the operator edge, or that hit the durable
+      // daily cap, retain the useful deterministic local response rather than
+      // exposing a paid provider to an unauthenticated browser.
+      const answerConfig = canUseRemote
+        ? config
+        : { ...config, kimi: { ...config.kimi, enabled: false } };
+      return await answer(question.trim(), rows, answerConfig);
     } finally {
       release();
     }

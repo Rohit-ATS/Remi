@@ -27,23 +27,37 @@ export function ReceiptScreen({
 
   useEffect(() => {
     let cancelled = false;
-    api
-      .receipt(receiptNo)
-      .then((result) => {
-        if (cancelled) return;
-        setReceipt(result.receipt);
-        setVerifyUrl(result.verifyUrl);
-      })
-      .catch((caught: unknown) => {
-        if (cancelled) return;
-        setError(
-          caught instanceof Error && caught.message === "no such receipt"
-            ? "That receipt does not exist yet. If the payout just settled, give it a moment."
-            : "That receipt could not be loaded.",
-        );
-      });
+    let retry: ReturnType<typeof setTimeout> | null = null;
+    let attempts = 0;
+    const load = (): void => {
+      api
+        .receipt(receiptNo)
+        .then((result) => {
+          if (cancelled) return;
+          setReceipt(result.receipt);
+          setVerifyUrl(result.verifyUrl);
+        })
+        .catch((caught: unknown) => {
+          if (cancelled) return;
+          // The server indexes only finalized blocks. Retry briefly so a sender
+          // can still follow the immediate receipt link without a public RPC
+          // trigger or presenting a provisional chain record as final.
+          if (caught instanceof Error && caught.message === "no such receipt" && attempts < 15) {
+            attempts += 1;
+            retry = setTimeout(load, 1000);
+            return;
+          }
+          setError(
+            caught instanceof Error && caught.message === "no such receipt"
+              ? "This payout is still waiting for network finality. Please try the link again shortly."
+              : "That receipt could not be loaded.",
+          );
+        });
+    };
+    load();
     return () => {
       cancelled = true;
+      if (retry !== null) clearTimeout(retry);
     };
   }, [receiptNo]);
 

@@ -18,6 +18,8 @@ export type PayoutRow = {
   timestamp: number;
   tx_hash: string;
   block_number: number;
+  /** Canonical block identity used to discard reorged rows on replay. */
+  block_hash: string;
 };
 
 const SCHEMA = `
@@ -32,7 +34,8 @@ CREATE TABLE IF NOT EXISTS payouts (
   passport_eligible INTEGER NOT NULL DEFAULT 0,
   timestamp    INTEGER NOT NULL,
   tx_hash      TEXT NOT NULL,
-  block_number INTEGER NOT NULL
+  block_number INTEGER NOT NULL,
+  block_hash   TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS payouts_payer ON payouts (payer, timestamp DESC);
 CREATE INDEX IF NOT EXISTS payouts_payee ON payouts (payee, timestamp DESC);
@@ -40,6 +43,11 @@ CREATE INDEX IF NOT EXISTS payouts_payee ON payouts (payee, timestamp DESC);
 CREATE TABLE IF NOT EXISTS meta (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS assistant_budget (
+  day   TEXT PRIMARY KEY,
+  count INTEGER NOT NULL
 );
 `;
 
@@ -67,6 +75,11 @@ export class Store {
     if (!columns.some((column) => column.name === "passport_eligible")) {
       this.db.exec("ALTER TABLE payouts ADD COLUMN passport_eligible INTEGER NOT NULL DEFAULT 0");
     }
+    if (!columns.some((column) => column.name === "block_hash")) {
+      // Empty hashes deliberately force the indexer to replay legacy rows before
+      // serving them as canonical data.
+      this.db.exec("ALTER TABLE payouts ADD COLUMN block_hash TEXT NOT NULL DEFAULT ''");
+    }
   }
 
   close(): void {
@@ -86,6 +99,51 @@ export class Store {
     this.db
       .prepare("INSERT INTO meta (key, value) VALUES ('cursor', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
       .run(block.toString());
+  }
+
+  /** Stored block identities within a bounded reconciliation window. */
+  blockHashesSince(block: bigint): { blockNumber: bigint; blockHash: string }[] {
+    const rows = this.db
+      .prepare(
+        "SELECT block_number, block_hash FROM payouts WHERE block_number >= ? GROUP BY block_number, block_hash ORDER BY block_number ASC",
+      )
+      .all(Number(block)) as { block_number: number; block_hash: string }[];
+    return rows.map((row) => ({ blockNumber: BigInt(row.block_number), blockHash: row.block_hash }));
+  }
+
+  /** Legacy rows cannot be treated as canonical until their block hash is replayed. */
+  firstMissingBlockHash(): bigint | null {
+    const row = this.db
+      .prepare("SELECT block_number FROM payouts WHERE block_hash = '' ORDER BY block_number ASC LIMIT 1")
+      .get() as { block_number: number } | undefined;
+    return row ? BigInt(row.block_number) : null;
+  }
+
+  /** Removes a non-canonical suffix and atomically moves the replay cursor. */
+  rewindFrom(block: bigint): void {
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      this.db.prepare("DELETE FROM payouts WHERE block_number >= ?").run(Number(block));
+      this.setCursor(block);
+      this.db.exec("COMMIT");
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      throw error;
+    }
+  }
+
+  /**
+   * A persistent provider-call ceiling. It is deliberately atomic: competing
+   * requests cannot both observe the same final remaining slot.
+   */
+  consumeAssistantBudget(day: string, limit: number): boolean {
+    const result = this.db
+      .prepare(
+        `INSERT INTO assistant_budget (day, count) VALUES (?, 1)
+         ON CONFLICT(day) DO UPDATE SET count = count + 1 WHERE count < ?`,
+      )
+      .run(day, limit);
+    return result.changes === 1;
   }
 
   /** Starts a fresh index when the configured contract changes. Receipt numbers
@@ -109,13 +167,14 @@ export class Store {
   upsertPayout(p: PayoutRow): void {
     this.db
       .prepare(
-        `INSERT INTO payouts (receipt_no, payer, payee, amount, label, memo, category, passport_eligible, timestamp, tx_hash, block_number)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `INSERT INTO payouts (receipt_no, payer, payee, amount, label, memo, category, passport_eligible, timestamp, tx_hash, block_number, block_hash)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(receipt_no) DO UPDATE SET
            payer = excluded.payer, payee = excluded.payee, amount = excluded.amount,
            label = excluded.label, memo = excluded.memo, category = excluded.category,
            passport_eligible = excluded.passport_eligible,
-           timestamp = excluded.timestamp, tx_hash = excluded.tx_hash, block_number = excluded.block_number`,
+           timestamp = excluded.timestamp, tx_hash = excluded.tx_hash, block_number = excluded.block_number,
+           block_hash = excluded.block_hash`,
       )
       .run(
         p.receipt_no,
@@ -129,6 +188,7 @@ export class Store {
         p.timestamp,
         p.tx_hash,
         p.block_number,
+        p.block_hash,
       );
   }
 

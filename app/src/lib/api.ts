@@ -163,7 +163,4 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ address }),
     }),
-
-  /** Nudges the indexer so a fresh payout shows up without waiting for the poll. */
-  reindex: () => request<{ ok: boolean }>("/api/reindex", { method: "POST" }),
 };

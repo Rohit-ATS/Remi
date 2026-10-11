@@ -29,10 +29,21 @@ services:
         sync: false
       - key: START_BLOCK
         sync: false
+      - key: INDEX_FINALITY_BLOCKS
+        value: "2"
+      - key: REORG_LOOKBACK_BLOCKS
+        value: "128"
       - key: CORS_ORIGINS
         sync: false
       - key: KIMI_REMOTE_ENABLED
         value: "false"
+      # Keep remote AI disabled unless an authenticated edge injects this secret
+      # after applying a shared rate limit. These are intentionally not exposed
+      # to the browser build.
+      - key: ASSISTANT_EDGE_TOKEN
+        sync: false
+      - key: KIMI_DAILY_REQUEST_LIMIT
+        sync: false
       - key: ASSISTANT_RATE_LIMIT
         value: "20"
       - key: ASSISTANT_RATE_LIMIT_PER_IP

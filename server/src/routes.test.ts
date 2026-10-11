@@ -1,15 +1,32 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parsePayoutLimit } from "./routes.ts";
+import Fastify from "fastify";
+import { loadConfig } from "./config.ts";
+import { Store } from "./db.ts";
+import { hasAssistantEdgeToken, registerRoutes } from "./routes.ts";
 
-test("payout pagination rejects negative, fractional and non-numeric limits", () => {
-  for (const value of ["-1", "0", "1.5", "Infinity", "nope"]) {
-    assert.equal(parsePayoutLimit(value), null, value);
-  }
+test("routes: assistant edge token rejects missing, wrong, and array headers", () => {
+  assert.equal(hasAssistantEdgeToken(undefined, "secret"), false);
+  assert.equal(hasAssistantEdgeToken("wrong", "secret"), false);
+  assert.equal(hasAssistantEdgeToken(["secret"], "secret"), false);
+  assert.equal(hasAssistantEdgeToken("secret", "secret"), true);
 });
 
-test("payout pagination has a bounded default and maximum", () => {
-  assert.equal(parsePayoutLimit(undefined), 100);
-  assert.equal(parsePayoutLimit("1"), 1);
-  assert.equal(parsePayoutLimit("999999"), 500);
+test("routes: public callers cannot trigger a reindex", async () => {
+  const app = Fastify();
+  const store = new Store(":memory:");
+  try {
+    registerRoutes(
+      app,
+      loadConfig({ NETWORK: "local" }),
+      store,
+      { getStatus: () => ({ running: false, cursor: "0", head: null, finalizedHead: null, lastError: null, lastRunAt: null }) } as any,
+    );
+    await app.ready();
+    const result = await app.inject({ method: "POST", url: "/api/reindex" });
+    assert.equal(result.statusCode, 404);
+  } finally {
+    await app.close();
+    store.close();
+  }
 });

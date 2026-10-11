@@ -19,6 +19,7 @@ function sampleRow(over: Partial<PayoutRow> = {}): PayoutRow {
     timestamp: 1700000000,
     tx_hash: "0xabc123",
     block_number: 100,
+    block_hash: "0xblock100",
     ...over,
   };
 }
@@ -132,6 +133,46 @@ test("db: passport_eligible is boolean false when 0", () => {
     const row = store.payoutByReceipt(1);
     assert.ok(row);
     assert.strictEqual(row.passport_eligible, false);
+  } finally {
+    store.close();
+  }
+});
+
+test("db: rewinding a reorged suffix removes rows and moves the cursor atomically", () => {
+  const store = createStore();
+  try {
+    store.upsertPayout(sampleRow({ receipt_no: 1, block_number: 100, block_hash: "0x100" }));
+    store.upsertPayout(sampleRow({ receipt_no: 2, block_number: 101, block_hash: "0x101" }));
+    store.setCursor(102n);
+
+    store.rewindFrom(101n);
+
+    assert.ok(store.payoutByReceipt(1));
+    assert.equal(store.payoutByReceipt(2), undefined);
+    assert.equal(store.getCursor(0n), 101n);
+  } finally {
+    store.close();
+  }
+});
+
+test("db: identifies the earliest legacy row without a canonical block hash", () => {
+  const store = createStore();
+  try {
+    store.upsertPayout(sampleRow({ receipt_no: 1, block_number: 101, block_hash: "" }));
+    store.upsertPayout(sampleRow({ receipt_no: 2, block_number: 99, block_hash: "0x99" }));
+    assert.equal(store.firstMissingBlockHash(), 101n);
+  } finally {
+    store.close();
+  }
+});
+
+test("db: assistant budget is durable and cannot exceed its daily limit", () => {
+  const store = createStore();
+  try {
+    assert.equal(store.consumeAssistantBudget("2026-10-10", 2), true);
+    assert.equal(store.consumeAssistantBudget("2026-10-10", 2), true);
+    assert.equal(store.consumeAssistantBudget("2026-10-10", 2), false);
+    assert.equal(store.consumeAssistantBudget("2026-10-11", 2), true);
   } finally {
     store.close();
   }

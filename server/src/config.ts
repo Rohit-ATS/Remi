@@ -52,6 +52,10 @@ export type Config = {
   pollMs: number;
   /** Blocks per getLogs request. RPCs cap this; 2000 is widely safe. */
   logChunk: bigint;
+  /** Only index blocks this far behind the head as canonical. */
+  finalityBlocks: bigint;
+  /** Recheck this many finalized blocks for a rare deeper reorganization. */
+  reorgLookbackBlocks: bigint;
   corsOrigins: string[];
   assistant: {
     maxRequests: number;
@@ -60,7 +64,16 @@ export type Config = {
     maxConcurrent: number;
     maxBuckets: number;
   };
-  kimi: { apiKey: string | null; enabled: boolean; baseUrl: string; model: string };
+  kimi: {
+    apiKey: string | null;
+    enabled: boolean;
+    baseUrl: string;
+    model: string;
+    /** A secret injected only by the operator's authenticated edge. */
+    edgeToken: string | null;
+    /** Durable UTC-day ceiling for paid provider requests. */
+    dailyRequestLimit: number | null;
+  };
 };
 
 function address(value: string | undefined): `0x${string}` | null {
@@ -95,6 +108,17 @@ function nonNegativeBigInt(value: string | undefined, fallback: bigint, name: st
   return BigInt(value.trim());
 }
 
+function positiveBigInt(value: string | undefined, fallback: bigint, name: string): bigint {
+  const n = nonNegativeBigInt(value, fallback, name);
+  if (n <= 0n) throw new Error(`${name} must be a positive integer`);
+  return n;
+}
+
+function nonEmpty(value: string | undefined): string | null {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+}
+
 function origins(value: string | undefined): string[] {
   const result = (value ?? "http://localhost:5173")
     .split(",")
@@ -111,6 +135,36 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     env.NETWORK === "mainnet" ? "mainnet" : env.NETWORK === "local" ? "local" : "testnet";
   const chain =
     network === "mainnet" ? monadMainnet : network === "local" ? localChain : monadTestnet;
+  const kimiEnabled = env.KIMI_REMOTE_ENABLED === "true";
+  const kimiApiKey = nonEmpty(env.KIMI_API_KEY);
+  const kimiEdgeToken = nonEmpty(env.ASSISTANT_EDGE_TOKEN);
+  const kimiDailyRequestLimit =
+    env.KIMI_DAILY_REQUEST_LIMIT === undefined || env.KIMI_DAILY_REQUEST_LIMIT === ""
+      ? null
+      : positiveInt(env.KIMI_DAILY_REQUEST_LIMIT, 1, "KIMI_DAILY_REQUEST_LIMIT");
+  const finalityBlocks = nonNegativeBigInt(
+    env.INDEX_FINALITY_BLOCKS,
+    network === "mainnet" ? 12n : network === "testnet" ? 2n : 0n,
+    "INDEX_FINALITY_BLOCKS",
+  );
+  const reorgLookbackBlocks = positiveBigInt(
+    env.REORG_LOOKBACK_BLOCKS,
+    128n,
+    "REORG_LOOKBACK_BLOCKS",
+  );
+  if (reorgLookbackBlocks < finalityBlocks) {
+    throw new Error("REORG_LOOKBACK_BLOCKS must be at least INDEX_FINALITY_BLOCKS");
+  }
+
+  // A browser cannot safely hold an authorization secret. Remote model traffic
+  // therefore has to arrive through an operator-controlled edge which both
+  // authenticates/rate-limits callers and adds ASSISTANT_EDGE_TOKEN. The local
+  // SQLite counter below is the durable backstop for this single-volume API.
+  if (kimiEnabled && (kimiApiKey === null || kimiEdgeToken === null || kimiDailyRequestLimit === null)) {
+    throw new Error(
+      "KIMI_REMOTE_ENABLED requires KIMI_API_KEY, ASSISTANT_EDGE_TOKEN, and KIMI_DAILY_REQUEST_LIMIT",
+    );
+  }
 
   return {
     port: int(env.PORT, 8787),
@@ -126,7 +180,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     startBlock: nonNegativeBigInt(env.START_BLOCK, 0n, "START_BLOCK"),
     dbPath: env.DB_PATH ?? "remi.db",
     pollMs: int(env.POLL_MS, network === "local" ? 500 : 2000),
-    logChunk: nonNegativeBigInt(env.LOG_CHUNK, 2000n, "LOG_CHUNK"),
+    logChunk: positiveBigInt(env.LOG_CHUNK, 2000n, "LOG_CHUNK"),
+    finalityBlocks,
+    reorgLookbackBlocks,
     corsOrigins: origins(env.CORS_ORIGINS),
     assistant: {
       maxRequests: positiveInt(env.ASSISTANT_RATE_LIMIT, 20, "ASSISTANT_RATE_LIMIT"),
@@ -142,12 +198,14 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     /** Dev-only faucet key. Never set outside a local chain. */
     devMintKey: network === "local" ? (env.PRIVATE_KEY ?? LOCAL_DEV_KEY) : null,
     kimi: {
-      apiKey: env.KIMI_API_KEY ?? null,
+      apiKey: kimiApiKey,
       // A public deployment must opt in after placing an edge rate limit and
       // a provider budget around it. A key alone never enables paid calls.
-      enabled: env.KIMI_REMOTE_ENABLED === "true",
+      enabled: kimiEnabled,
       baseUrl: env.KIMI_BASE_URL ?? "https://api.moonshot.ai/v1",
       model: env.KIMI_MODEL ?? "kimi-k2-0905-preview",
+      edgeToken: kimiEdgeToken,
+      dailyRequestLimit: kimiDailyRequestLimit,
     },
   };
 }

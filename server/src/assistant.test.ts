@@ -17,6 +17,7 @@ function row(over: Partial<PayoutRow> = {}): PayoutRow {
     timestamp: 1760000000,
     tx_hash: "0xhash",
     block_number: 1,
+    block_hash: "0xblock1",
     ...over,
   };
 }
@@ -35,6 +36,8 @@ const mockConfig: Config = {
   devMintKey: null,
   pollMs: 1000,
   logChunk: 2000n,
+  finalityBlocks: 0n,
+  reorgLookbackBlocks: 128n,
   corsOrigins: ["http://localhost:5173"],
   assistant: {
     maxRequests: 20,
@@ -48,6 +51,8 @@ const mockConfig: Config = {
     enabled: false,
     baseUrl: "https://api.moonshot.ai/v1",
     model: "kimi-k2-0905-preview",
+    edgeToken: null,
+    dailyRequestLimit: null,
   },
 };
 
@@ -118,6 +123,8 @@ test("assistant: answer falls back gracefully if remote fetch fails", async () =
       enabled: true,
       baseUrl: "https://api.moonshot.ai/v1",
       model: "kimi-k2-0905-preview",
+      edgeToken: "edge-test-token",
+      dailyRequestLimit: 10,
     },
   };
 

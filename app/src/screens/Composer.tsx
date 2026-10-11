@@ -215,8 +215,6 @@ export function Composer({
       setPending(null);
       setText("");
       setMemo("");
-      // The indexer polls, but a nudge makes the receipt appear immediately.
-      await api.reindex().catch(() => undefined);
       onSent();
 
       if (sent.receiptNo !== null) navigate(`/r/${sent.receiptNo}`);
