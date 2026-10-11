@@ -1877,6 +1877,37 @@ td.n {
   margin-right: auto;
 }
 
+/* Arming sits under the row it belongs to, on its own line, because it is a
+   standing decision about one payment rather than another button to press. */
+.autopay {
+  flex: 1 1 100%;
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+}
+.autopay__toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+.autopay__toggle input {
+  width: 0.95rem;
+  height: 0.95rem;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.autopay__note {
+  font-size: 0.74rem;
+  line-height: 1.4;
+  color: var(--faint);
+}
+
 /* One column, one subject. While a day is open it is what the column is for,
    and the standing summary would otherwise push it out of sight. */
 .homeside:has(.daypanel) .homeside__summary {
