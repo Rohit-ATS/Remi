@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Payout } from "../lib/api.ts";
-import { formatDate, formatUsd, shortAddress } from "../lib/money.ts";
+import { formatDate, formatExact, formatUsd, shortAddress } from "../lib/money.ts";
 import { routeHref } from "../lib/router.ts";
 import { Sheet } from "../screens/Sheets.tsx";
 import { Download } from "../site/primitives.tsx";
@@ -170,7 +170,15 @@ export function PaymentHistory({
   );
 }
 
-/** One row's receipt, without leaving the table it was read from. */
+/**
+ * One row's receipt, without leaving the table it was read from.
+ *
+ * The same card the receipt page prints — stamp, torn edge and all — because
+ * a receipt is the product's native object and it should not arrive as a
+ * summary of itself. It lands in the middle of the screen rather than rising
+ * from the bottom edge: nothing here is waiting to be acted on, it is a thing
+ * being handed over to be read.
+ */
 function ReceiptSheet({
   payout,
   received,
@@ -182,63 +190,88 @@ function ReceiptSheet({
   explorer: string | null;
   onClose: () => void;
 }) {
-  const counterparty = received ? payout.payer : payout.payee;
+  const [copied, setCopied] = useState(false);
+
+  const share = async (): Promise<void> => {
+    const url = `${location.origin}${routeHref(`/r/${payout.receipt_no}`)}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Copying can be blocked; the full receipt below is still a way out.
+    }
+  };
 
   return (
-    <Sheet label={`Receipt ${payout.receipt_no}`} dismissible onClose={onClose}>
-      <div className="stack-sm">
-        <p className="eyebrow">Receipt #{String(payout.receipt_no).padStart(4, "0")}</p>
-        <p className="receipt-amount">{formatUsd(payout.amount)}</p>
-        <p className="hushed" style={{ margin: 0 }}>
+    <Sheet
+      label={`Receipt ${payout.receipt_no}`}
+      dismissible
+      placement="centre"
+      onClose={onClose}
+    >
+      <div className="receipt">
+        <div className="spread" style={{ alignItems: "flex-start" }}>
+          <span className="eyebrow">
+            Receipt {String(payout.receipt_no).padStart(4, "0")}
+          </span>
+          <span className="paid stamp-in">PAID</span>
+        </div>
+
+        <p className="receipt-amount" style={{ marginTop: "0.9rem" }}>
+          {formatUsd(payout.amount)}
+        </p>
+        <p className="hushed" style={{ marginTop: "0.2rem" }}>
           {received ? "from" : "to"}{" "}
           {received ? shortAddress(payout.payer) : payout.label || shortAddress(payout.payee)}
         </p>
+
+        <dl style={{ margin: "1.1rem 0 0" }}>
+          <div className="kv">
+            <dt>Settled</dt>
+            <dd>{formatDate(payout.timestamp)}</dd>
+          </div>
+          {payout.memo.trim() !== "" && (
+            <div className="kv">
+              <dt>For</dt>
+              <dd>{payout.memo}</dd>
+            </div>
+          )}
+          <div className="kv">
+            <dt>Category</dt>
+            <dd>{payout.category}</dd>
+          </div>
+          <div className="kv">
+            <dt>Exact amount</dt>
+            <dd>{formatExact(payout.amount)}</dd>
+          </div>
+          <div className="kv">
+            <dt>{received ? "From" : "To"}</dt>
+            <dd>{shortAddress(received ? payout.payer : payout.payee)}</dd>
+          </div>
+          <div className="kv">
+            <dt>Passport</dt>
+            <dd>{payout.passport_eligible ? "On the record" : "Off Passport"}</dd>
+          </div>
+        </dl>
+
+        {explorer !== null && (
+          <p className="small" style={{ marginTop: "1rem" }}>
+            <a href={`${explorer}/tx/${payout.tx_hash}`} target="_blank" rel="noreferrer noopener">
+              Verify this payout
+            </a>
+          </p>
+        )}
       </div>
 
-      <dl style={{ margin: 0 }}>
-        <div className="kv">
-          <dt>Date</dt>
-          <dd>{formatDate(payout.timestamp)}</dd>
-        </div>
-        <div className="kv">
-          <dt>{received ? "From" : "To"}</dt>
-          <dd className="mono">{shortAddress(counterparty)}</dd>
-        </div>
-        <div className="kv">
-          <dt>Category</dt>
-          <dd>{payout.category}</dd>
-        </div>
-        {payout.memo.trim() !== "" && (
-          <div className="kv">
-            <dt>For</dt>
-            <dd>{payout.memo}</dd>
-          </div>
-        )}
-        <div className="kv">
-          <dt>Status</dt>
-          <dd>Settled in block {payout.block_number}</dd>
-        </div>
-        <div className="kv">
-          <dt>Passport</dt>
-          <dd>{payout.passport_eligible ? "Counts toward the record" : "Off Passport"}</dd>
-        </div>
-        <div className="kv">
-          <dt>Transaction</dt>
-          <dd className="mono">
-            {explorer === null ? (
-              shortAddress(payout.tx_hash)
-            ) : (
-              <a href={`${explorer}/tx/${payout.tx_hash}`} target="_blank" rel="noreferrer">
-                {shortAddress(payout.tx_hash)}
-              </a>
-            )}
-          </dd>
-        </div>
-      </dl>
-
-      <a className="btn btn-accent btn-block" href={routeHref(`/r/${payout.receipt_no}`)}>
-        Open the full receipt
-      </a>
+      <div className="row">
+        <button type="button" className="btn btn-ghost" onClick={() => void share()}>
+          {copied ? "Link copied" : "Share receipt"}
+        </button>
+        <a className="btn btn-ghost" href={routeHref(`/r/${payout.receipt_no}`)}>
+          Open the full receipt
+        </a>
+      </div>
       <button type="button" className="btn btn-ghost btn-block" onClick={onClose}>
         Close
       </button>
