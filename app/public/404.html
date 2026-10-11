@@ -4,6 +4,22 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#f8f7f4" />
+    <script>
+      // This page is served at an unknown path, so a relative favicon URL
+      // would incorrectly resolve beneath that missing route. Work out the
+      // GitHub Pages project base before adding the same icon as the app.
+      (() => {
+        const parts = window.location.pathname.split("/").filter(Boolean);
+        const base = window.location.hostname.endsWith(".github.io") && parts.length > 0
+          ? `/${parts[0]}/`
+          : "/";
+        const icon = document.createElement("link");
+        icon.rel = "icon";
+        icon.type = "image/svg+xml";
+        icon.href = `${base}favicon.svg`;
+        document.head.append(icon);
+      })();
+    </script>
     <title>Page not found — Remi</title>
     <style>
       :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f8f7f4; color: #151513; }
