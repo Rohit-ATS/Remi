@@ -29,7 +29,11 @@ export function DueDates({
   onPay,
 }: {
   account: StoredAccount;
-  /** Needed to pay an armed reminder outright rather than via the composer. */
+  /**
+   * The whole config, not just the network: the network decides whether a
+   * demo key may be used at all, and paying an armed reminder outright needs
+   * the chain and the contract addresses beside it.
+   */
   config: ServerConfig;
   onPay: (occurrence: Occurrence) => void;
 }) {
@@ -42,6 +46,7 @@ export function DueDates({
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [paying, setPaying] = useState<string | null>(null);
+  const network = config.network;
 
   const [label, setLabel] = useState("");
   const [amount, setAmount] = useState("");
@@ -76,7 +81,7 @@ export function DueDates({
     setBusy(true);
     setError(null);
     try {
-      const list = await unlockReminders<Reminder>(account);
+      const list = await unlockReminders<Reminder>(account, network);
       setReminders(list);
       return list;
     } catch (caught) {
@@ -85,7 +90,7 @@ export function DueDates({
     } finally {
       setBusy(false);
     }
-  }, [account]);
+  }, [account, network]);
 
   // Deferring the unlock exists to avoid spending a prompt nobody asked for.
   // A demo account has no prompt to spend — its key is already here — so the
@@ -99,7 +104,7 @@ export function DueDates({
     setBusy(true);
     setError(null);
     try {
-      await saveReminders(account, next);
+      await saveReminders(account, network, next);
       setReminders(next);
     } catch (caught) {
       setError(describeError(caught));

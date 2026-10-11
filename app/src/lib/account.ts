@@ -23,6 +23,7 @@ import {
 } from "@category-labs/mera";
 import { toViemAccount } from "@category-labs/mera/viem";
 import { createWalletClient, http, type Address, type Chain, type WalletClient } from "viem";
+import type { ServerConfig } from "./api.ts";
 
 export type StoredAccount = {
   address: Address;
@@ -76,6 +77,23 @@ export function signOut(): void {
   } catch {
     // Nothing to do: there is no key material to clear, only a pointer.
   }
+}
+
+/** Demo keys are deliberately limited to networks where their token has no real value. */
+export function demoAccountsAllowed(network: ServerConfig["network"] | null | undefined): boolean {
+  return network === "local" || network === "testnet";
+}
+
+/** Removes a demo key on a real-money network without disturbing a passkey account. */
+export function clearDemoAccount(): boolean {
+  const demoAccount = readStored()?.demo === true;
+  try {
+    localStorage.removeItem(DEMO_KEY_STORAGE);
+    if (demoAccount) localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Browser storage can be unavailable; there is no usable demo key in that case.
+  }
+  return demoAccount;
 }
 
 // ---- the demo account
@@ -151,8 +169,20 @@ export const LOCAL_CHAIN_KEY = "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efc
  * stored, because the caller is asking for a particular address rather than
  * for any account at all.
  */
-export function createDemoAccount(label: string, seed?: string): StoredAccount {
-  const seeded = seed !== undefined && /^[0-9a-f]{64}$/.test(seed);
+export function createDemoAccount(
+  label: string,
+  network: ServerConfig["network"] | null | undefined,
+  seed?: string,
+): StoredAccount {
+  if (!demoAccountsAllowed(network)) {
+    clearDemoAccount();
+    throw new Error("Demo accounts are only available on local and testnet deployments.");
+  }
+
+  // The known Hardhat key is safe only on the disposable local chain. Testnet
+  // demos deliberately keep their browser-generated key even if a caller
+  // attempts to provide a seed.
+  const seeded = network === "local" && seed !== undefined && /^[0-9a-f]{64}$/.test(seed);
   let key = seeded ? fromHex(seed) : readDemoKey();
   if (key === null || seeded) {
     if (key === null) {
@@ -259,13 +289,20 @@ export type SessionContext = {
 export async function withSession<T>(
   chain: Chain,
   rpcUrl: string,
+  network: ServerConfig["network"],
   fn: (context: SessionContext) => Promise<T>,
 ): Promise<T> {
   const stored = readStored();
   if (stored === null) throw new Error("Not signed in.");
 
-  const demo = stored.demo === true ? await demoPrfOutput() : null;
-  if (demo !== null) return runSession(demo, chain, rpcUrl, fn);
+  if (stored.demo === true) {
+    if (!demoAccountsAllowed(network)) {
+      clearDemoAccount();
+      throw new Error("Demo accounts are only available on local and testnet deployments.");
+    }
+    const demo = await demoPrfOutput();
+    if (demo !== null) return runSession(demo, chain, rpcUrl, fn);
+  }
 
   const { prfOutput } = await getPasskeyPrfOutput({
     rpId: rpId(),

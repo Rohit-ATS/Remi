@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   createAccount,
   createDemoAccount,
+  demoAccountsAllowed,
   describeError,
   LOCAL_CHAIN_KEY,
   signIn,
@@ -42,6 +43,11 @@ export function SignIn({
   // An email from the hero is a reasonable first guess at the business name,
   // and a filled field is faster to correct than an empty one to complete.
   const [name, setName] = useState(email === null ? "" : businessNameFrom(email));
+  const demoAvailable = demoAccountsAllowed(config?.network);
+  const local = config?.network === "local";
+  // Whatever this device calls its unlock. A fingerprint reader runs the same
+  // ceremony a face does, and the button should not imply otherwise.
+  const unlock = unlockName();
 
   const run = async (which: "create" | "signin" | "demo"): Promise<void> => {
     setBusy(which);
@@ -54,6 +60,7 @@ export function SignIn({
             ? await signIn()
             : createDemoAccount(
                 name.trim() || "Demo business",
+                config?.network,
                 // On a local chain, be the account `npm run demo` wrote its
                 // history for. Anywhere else, a fresh key of this browser's own.
                 local ? LOCAL_CHAIN_KEY : undefined,
@@ -68,10 +75,6 @@ export function SignIn({
   };
 
   const creating = mode === "create";
-  const local = config?.network === "local";
-  // Whatever this device calls its unlock. A fingerprint reader runs the same
-  // ceremony a face does, and the button should not imply otherwise.
-  const unlock = unlockName();
 
   return (
     <main className="shell">
@@ -132,21 +135,29 @@ export function SignIn({
             PRF extension, or a demo on a borrowed laptop. It is a real account
             on the same chain — only its key sits in this browser rather than
             behind a biometric, which is why it says so plainly. */}
-        <div className="card stack-sm">
-          <button
-            type="button"
-            className="btn btn-soft btn-block"
-            onClick={() => void run("demo")}
-            disabled={busy !== null}
-          >
-            {busy === "demo" ? <span className="spinner" /> : "Open a demo account instead"}
-          </button>
-          <p className="small faint" style={{ margin: 0 }}>
-            {local
-              ? "No passkey. Opens the local chain's demo account, so anything `npm run demo` wrote is already there."
-              : "No passkey. The key is generated here and kept in this browser, so use it to look around, not to hold real money."}
-          </p>
-        </div>
+        {demoAvailable && (
+          <div className="card stack-sm">
+            <button
+              type="button"
+              className="btn btn-soft btn-block"
+              onClick={() => void run("demo")}
+              disabled={busy !== null}
+            >
+              {busy === "demo" ? (
+                <span className="spinner" />
+              ) : local ? (
+                "Open the local demo account"
+              ) : (
+                "Open a demo account instead"
+              )}
+            </button>
+            <p className="small faint" style={{ margin: 0 }}>
+              {local
+                ? "No passkey. Opens the local chain's demo account, so anything `npm run demo` wrote is already there."
+                : "No passkey. The key is generated here and kept in this browser, so use it to look around, not to hold real money."}
+            </p>
+          </div>
+        )}
 
         {error !== null && <div className="notice notice-error">{error}</div>}
 

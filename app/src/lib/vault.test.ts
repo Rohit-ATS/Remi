@@ -1,5 +1,20 @@
-import { describe, expect, it } from "vitest";
-import { upsertEntry, findEntry, type PayeeEntry } from "./vault.ts";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { upsertEntry, findEntry, savePayeeBook, unlockPayeeBook, type PayeeEntry } from "./vault.ts";
+
+const ACCOUNT_KEY = "remi.account.v1";
+const DEMO_KEY = "remi.demo-key.v1";
+
+function installStorage(entries: Record<string, string> = {}) {
+  const values = new Map(Object.entries(entries));
+  vi.stubGlobal("localStorage", {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => values.set(key, value),
+    removeItem: (key: string) => values.delete(key),
+  });
+  return values;
+}
+
+afterEach(() => vi.unstubAllGlobals());
 
 const sampleEntry: PayeeEntry = {
   label: "Maria",
@@ -48,5 +63,23 @@ describe("vault payee book helpers", () => {
     expect(findEntry(book, "maria")).toEqual(sampleEntry);
     expect(findEntry(book, "MARIA")).toEqual(sampleEntry);
     expect(findEntry(book, "Unknown")).toBeUndefined();
+  });
+
+  it("refuses to derive a demo vault key on mainnet and clears it", async () => {
+    const account = {
+      address: "0x1111111111111111111111111111111111111111" as const,
+      credentialId: "demo:1111111111111111",
+      label: "Demo",
+      demo: true as const,
+    };
+    const values = installStorage({
+      [ACCOUNT_KEY]: JSON.stringify(account),
+      [DEMO_KEY]: "1".repeat(64),
+    });
+
+    await expect(unlockPayeeBook(account, "mainnet")).rejects.toThrow(/only available/i);
+    await expect(savePayeeBook(account, "mainnet", [])).rejects.toThrow(/only available/i);
+    expect(values.get(ACCOUNT_KEY)).toBeUndefined();
+    expect(values.get(DEMO_KEY)).toBeUndefined();
   });
 });

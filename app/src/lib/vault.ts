@@ -18,7 +18,14 @@
 // The key is derived per operation and never stored.
 
 import { getPasskeyPrfOutput } from "@category-labs/mera";
-import { demoPrfOutput, PAYEE_BOOK_SALT_INPUT, type StoredAccount } from "./account.ts";
+import {
+  clearDemoAccount,
+  demoAccountsAllowed,
+  demoPrfOutput,
+  PAYEE_BOOK_SALT_INPUT,
+  type StoredAccount,
+} from "./account.ts";
+import type { ServerConfig } from "./api.ts";
 
 export type PayeeEntry = {
   label: string;
@@ -67,7 +74,20 @@ async function payeeBookSalt(): Promise<Uint8Array> {
  * `extractable: false` means the raw bytes cannot be read back out of the
  * CryptoKey, so nothing in the app can accidentally log or transmit them.
  */
-async function deriveKey(account: StoredAccount): Promise<CryptoKey> {
+function assertDemoAccountAllowed(account: StoredAccount, network: ServerConfig["network"]): void {
+  // Clear any old browser-held demo secret as soon as a real-money deployment
+  // reaches this boundary. This also protects direct vault callers that bypass
+  // the React-level cleanup in App.
+  if (!demoAccountsAllowed(network)) {
+    clearDemoAccount();
+    if (account.demo === true) {
+      throw new Error("Demo accounts are only available on local and testnet deployments.");
+    }
+  }
+}
+
+async function deriveKey(account: StoredAccount, network: ServerConfig["network"]): Promise<CryptoKey> {
+  assertDemoAccountAllowed(account, network);
   // A demo account has no passkey to ask, but it still has a distinct secret
   // per salt, so the payee book is encrypted exactly as it otherwise would be.
   if (account.demo === true) {
@@ -116,11 +136,17 @@ export function hasPayeeBook(): boolean {
   return readBlob() !== null;
 }
 
-async function unlockAt<T>(account: StoredAccount, storageKey: string, fallback: T): Promise<T> {
+async function unlockAt<T>(
+  account: StoredAccount,
+  network: ServerConfig["network"],
+  storageKey: string,
+  fallback: T,
+): Promise<T> {
+  assertDemoAccountAllowed(account, network);
   const blob = readBlob(storageKey);
   if (blob === null) return fallback;
 
-  const key = await deriveKey(account);
+  const key = await deriveKey(account, network);
   const plaintext = await crypto.subtle.decrypt(
     { name: "AES-GCM", iv: fromBase64(blob.nonce) },
     key,
@@ -131,11 +157,12 @@ async function unlockAt<T>(account: StoredAccount, storageKey: string, fallback:
 
 async function saveAt(
   account: StoredAccount,
+  network: ServerConfig["network"],
   storageKey: string,
   value: unknown,
   whatFailed: string,
 ): Promise<void> {
-  const key = await deriveKey(account);
+  const key = await deriveKey(account, network);
   const nonce = crypto.getRandomValues(new Uint8Array(12));
   const ciphertext = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv: nonce },
@@ -155,12 +182,19 @@ async function saveAt(
   }
 }
 
-export async function unlockPayeeBook(account: StoredAccount): Promise<PayeeEntry[]> {
-  return unlockAt<PayeeEntry[]>(account, STORAGE_KEY, []);
+export async function unlockPayeeBook(
+  account: StoredAccount,
+  network: ServerConfig["network"],
+): Promise<PayeeEntry[]> {
+  return unlockAt<PayeeEntry[]>(account, network, STORAGE_KEY, []);
 }
 
-export async function savePayeeBook(account: StoredAccount, entries: PayeeEntry[]): Promise<void> {
-  await saveAt(account, STORAGE_KEY, entries, "the payee book");
+export async function savePayeeBook(
+  account: StoredAccount,
+  network: ServerConfig["network"],
+  entries: PayeeEntry[],
+): Promise<void> {
+  await saveAt(account, network, STORAGE_KEY, entries, "the payee book");
 }
 
 /**
@@ -171,12 +205,19 @@ export async function savePayeeBook(account: StoredAccount, entries: PayeeEntry[
  * Storing reminders in the clear beside an encrypted payee book would hand an
  * observer the mapping anyway, so they go behind the same Face ID.
  */
-export async function unlockReminders<T>(account: StoredAccount): Promise<T[]> {
-  return unlockAt<T[]>(account, REMINDERS_KEY, []);
+export async function unlockReminders<T>(
+  account: StoredAccount,
+  network: ServerConfig["network"],
+): Promise<T[]> {
+  return unlockAt<T[]>(account, network, REMINDERS_KEY, []);
 }
 
-export async function saveReminders(account: StoredAccount, reminders: unknown[]): Promise<void> {
-  await saveAt(account, REMINDERS_KEY, reminders, "your reminders");
+export async function saveReminders(
+  account: StoredAccount,
+  network: ServerConfig["network"],
+  reminders: unknown[],
+): Promise<void> {
+  await saveAt(account, network, REMINDERS_KEY, reminders, "your reminders");
 }
 
 /** True when there is an encrypted reminder list to open. */

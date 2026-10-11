@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, apiIsUnconfigured, type ServerConfig } from "./lib/api.ts";
-import { getStoredAccount, signOut, type StoredAccount } from "./lib/account.ts";
+import { clearDemoAccount, getStoredAccount, signOut, type StoredAccount } from "./lib/account.ts";
 import { GATED, navigate, routeHref, signInPath, useRoute, useScrollReset, type Route } from "./lib/router.ts";
 import { AppHeader } from "./components/AppHeader.tsx";
 import { SideNav, TabBar } from "./components/Nav.tsx";
@@ -41,6 +41,13 @@ export function App() {
         ),
       );
   }, []);
+
+  // A demo key is only for local/testnet demonstrations. Clear an old one as
+  // soon as the server confirms this deployment points at mainnet, including a
+  // key left behind after the user later created a passkey account.
+  useEffect(() => {
+    if (config?.network === "mainnet" && clearDemoAccount()) setAccount(null);
+  }, [config?.network]);
 
   useScrollReset(route);
 
