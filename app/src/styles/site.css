@@ -554,6 +554,150 @@
   margin-top: 1.6rem;
 }
 
+/* ============================ why a chain ============================== */
+
+.why__heading {
+  display: grid;
+  gap: 0.85rem;
+  max-width: 46rem;
+}
+.why__heading h2 {
+  font-size: clamp(2.2rem, 4.5vw, 4.1rem);
+  line-height: 0.98;
+  letter-spacing: -0.06em;
+}
+.why__heading h2 em {
+  display: block;
+  color: var(--faint);
+  font-style: normal;
+}
+.why__layout {
+  display: grid;
+  grid-template-columns: minmax(18rem, 0.92fr) minmax(22rem, 1.08fr);
+  gap: clamp(2rem, 7vw, 7.5rem);
+  margin-top: clamp(2rem, 5vw, 4.25rem);
+  align-items: stretch;
+}
+.why__claim {
+  display: flex;
+  flex-direction: column;
+  min-height: 25rem;
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+  color: var(--on-night);
+  background: var(--night);
+  border-radius: var(--radius-lg);
+  position: relative;
+  overflow: hidden;
+}
+.why__claim::after {
+  content: "01";
+  position: absolute;
+  right: -0.05em;
+  bottom: -0.24em;
+  color: var(--on-night-dim);
+  font-family: var(--display);
+  font-size: clamp(8rem, 17vw, 15rem);
+  font-weight: 600;
+  letter-spacing: -0.1em;
+  line-height: 0.8;
+  pointer-events: none;
+}
+.why__number {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.why__claim .why__number { color: var(--on-night-soft); }
+.why__opening,
+.why__statement,
+.why__detail,
+.why__outcome { position: relative; z-index: 1; }
+.why__opening {
+  max-width: 32ch;
+  margin-top: 2.4rem;
+  color: var(--on-night-soft);
+  font-size: 0.96rem;
+  line-height: 1.55;
+}
+.why__statement {
+  max-width: 19ch;
+  margin-top: 1.8rem;
+  font-family: var(--display);
+  font-size: clamp(1.45rem, 2.35vw, 2rem);
+  font-weight: 500;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+}
+.why__detail {
+  max-width: 39ch;
+  margin-top: 1.3rem;
+  color: var(--on-night-soft);
+  font-size: 0.9rem;
+  line-height: 1.58;
+}
+.why__outcome {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: fit-content;
+  margin-top: auto;
+  padding-top: 2.2rem;
+  color: var(--on-night);
+  font-family: var(--mono);
+  font-size: 0.67rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.why__outcome b { color: var(--accent); font-size: 0.9rem; }
+.why__logic {
+  display: grid;
+  align-content: space-between;
+  gap: 2rem;
+  padding: 0.35rem 0 0.25rem;
+}
+.why__logic-intro { max-width: 32rem; }
+.why__logic-intro p {
+  margin-top: 1rem;
+  color: var(--hushed);
+  font-size: clamp(1.15rem, 1.8vw, 1.45rem);
+  line-height: 1.28;
+  letter-spacing: -0.02em;
+}
+.why__steps {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--rule);
+}
+.why__steps li {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  gap: 0.9rem;
+  padding: 1.2rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+.why__steps li > span {
+  padding-top: 0.18rem;
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 0.68rem;
+}
+.why__steps p {
+  margin: 0;
+  color: var(--hushed);
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+.why__steps strong { color: var(--ink); font-weight: 600; }
+@media (max-width: 760px) {
+  .why__layout { grid-template-columns: 1fr; gap: 2.25rem; }
+  .why__claim { min-height: 0; }
+  .why__logic { padding: 0; }
+}
+
 /* ============================== cell grid =============================== */
 
 .cells {

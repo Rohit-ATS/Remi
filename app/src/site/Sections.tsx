@@ -207,37 +207,50 @@ export function Privacy() {
 export function WhyMonad() {
   return (
     <section className="section site-shell" id="why">
-      <h2 className="section__head">
-        Why this needs a chain at all. <em>Not the reason you expect.</em>
-      </h2>
-      <div className="split" style={{ marginTop: "2rem" }}>
-        <div>
-          <p className="section__lead" style={{ marginTop: 0 }}>
-            Moving a stablecoin and emitting an event works on any chain, and &ldquo;settlement is
-            fast&rdquo; is true of several. That is not the argument.
+      <div className="why__heading">
+        <span className="eyebrow">WHY A CHAIN</span>
+        <h2>
+          Why this needs a chain at all. <em>Not the reason you expect.</em>
+        </h2>
+      </div>
+
+      <div className="why__layout">
+        <article className="why__claim">
+          <span className="why__number">01 / THE RECORD</span>
+          <p className="why__opening">
+            Moving a stablecoin and emitting an event works on any chain. Fast settlement is real —
+            and beside the point.
           </p>
-          <p className="section__lead">
-            <strong style={{ color: "var(--ink)" }}>
-              Remi does not use the chain to move money. It uses the chain so that no single employer
-              owns a worker&rsquo;s income history.
-            </strong>{" "}
-            In Remi&rsquo;s database those are Remi&rsquo;s records and the worker is a tenant. As
-            public state, a lender can underwrite them without Remi&rsquo;s permission and the worker
-            keeps them if Remi disappears.
+          <p className="why__statement">
+            The chain is not where Remi moves money. It is where a worker keeps an income history
+            that no single employer can own.
           </p>
-        </div>
-        <div>
-          <p className="section__lead" style={{ marginTop: 0 }}>
-            That choice has a cost, and the cost picks the chain. A credential is only worth
-            something if it is complete, so <strong style={{ color: "var(--ink)" }}>every payout
-            must be written</strong> — weekly, across millions of workers, each one a state write
-            rather than a transfer.
+          <p className="why__detail">
+            In a company database, the worker is a tenant. As public state, a lender can verify the
+            record without Remi&rsquo;s permission — and the worker keeps it if Remi disappears.
           </p>
-          <p className="section__lead">
-            Writes have to stay near free or the product quietly starts skipping records. Monad is
-            where per-payout writes at that volume stay cheap, and where AUSD and passkey accounts
-            with no custody backend are already native.
-          </p>
+          <span className="why__outcome">Portable by default <b>↗</b></span>
+        </article>
+
+        <div className="why__logic">
+          <div className="why__logic-intro">
+            <span className="why__number">02 / THE CONSTRAINT</span>
+            <p>That choice has a cost. The cost is what picks the chain.</p>
+          </div>
+          <ol className="why__steps">
+            <li>
+              <span>01</span>
+              <p><strong>Every payout must be written.</strong> A credential only means something when its history is complete — weekly, across millions of workers.</p>
+            </li>
+            <li>
+              <span>02</span>
+              <p><strong>Writes must stay close to free.</strong> Otherwise the product quietly starts skipping the very records that make it useful.</p>
+            </li>
+            <li>
+              <span>03</span>
+              <p><strong>Monad is the fit.</strong> Cheap high-volume writes, AUSD and passkey accounts are already native to the same place.</p>
+            </li>
+          </ol>
         </div>
       </div>
     </section>
