@@ -29,6 +29,7 @@ const mockConfig: Config = {
   network: "local",
   chain: {} as any,
   rpcUrl: "http://127.0.0.1:8545",
+  publicRpcUrl: "http://127.0.0.1:8545",
   payoutsAddress: null,
   tokenAddress: null,
   startBlock: 0n,

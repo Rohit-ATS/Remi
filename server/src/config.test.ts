@@ -29,3 +29,47 @@ test("config: indexer rejects a zero-size log chunk and chooses safe finality de
     /REORG_LOOKBACK_BLOCKS must be at least INDEX_FINALITY_BLOCKS/,
   );
 });
+
+test("config: public RPC never inherits the server-only RPC_URL", () => {
+  const config = loadConfig({
+    NETWORK: "testnet",
+    RPC_URL: "https://provider.example/v1/server-secret",
+  });
+  assert.equal(config.rpcUrl, "https://provider.example/v1/server-secret");
+  assert.equal(config.publicRpcUrl, "https://testnet-rpc.monad.xyz");
+
+  const configured = loadConfig({
+    NETWORK: "testnet",
+    RPC_URL: "https://provider.example/v1/server-secret",
+    PUBLIC_RPC_URL: "https://public-rpc.example",
+  });
+  assert.equal(configured.publicRpcUrl, "https://public-rpc.example");
+
+  const blank = loadConfig({
+    NETWORK: "testnet",
+    RPC_URL: "",
+    PUBLIC_RPC_URL: "   ",
+  });
+  assert.equal(blank.rpcUrl, "https://testnet-rpc.monad.xyz");
+  assert.equal(blank.publicRpcUrl, "https://testnet-rpc.monad.xyz");
+
+  assert.throws(
+    () =>
+      loadConfig({
+        NETWORK: "testnet",
+        RPC_URL: "https://provider.example/v1/server-secret",
+        PUBLIC_RPC_URL: "https://provider.example/v1/server-secret",
+      }),
+    /PUBLIC_RPC_URL must not match RPC_URL/,
+  );
+
+  assert.throws(
+    () =>
+      loadConfig({
+        NETWORK: "testnet",
+        RPC_URL: "https://provider.example/v1/server-secret#server",
+        PUBLIC_RPC_URL: "https://provider.example/v1/server-secret#browser",
+      }),
+    /PUBLIC_RPC_URL must not match RPC_URL/,
+  );
+});

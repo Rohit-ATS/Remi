@@ -184,6 +184,12 @@ for `PAYOUTS_ADDRESS`, `TOKEN_ADDRESS`, and `START_BLOCK`; set `CORS_ORIGINS`
 to the exact public URL Render assigns to `remi-app`; then set `VITE_API_BASE`
 to the exact public URL of `remi-api` and deploy the static app again.
 
+`RPC_URL` is server-only: use it for the indexer (and it may contain a provider
+credential). The browser instead receives `PUBLIC_RPC_URL` from `/api/config`.
+Leave it unset to use Monad's built-in public endpoint, or set it to a separate
+credential-free RPC URL that accepts browser CORS requests. Never put a provider
+secret in `PUBLIC_RPC_URL`.
+
 Do not configure `PRIVATE_KEY` on the API. It cannot and must not sign payouts.
 The optional Kimi integration is disabled by default even with a key. Retain the
 local assistant unless an authenticated edge rate-limits callers and injects a

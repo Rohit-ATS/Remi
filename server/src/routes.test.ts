@@ -31,6 +31,65 @@ test("routes: public callers cannot trigger a reindex", async () => {
   }
 });
 
+test("routes: public config never discloses the server RPC_URL", async () => {
+  const app = Fastify();
+  const store = new Store(":memory:");
+  const serverRpc = "https://provider.example/v1/server-secret";
+  const publicRpc = "https://public-rpc.example";
+  try {
+    registerRoutes(
+      app,
+      loadConfig({ NETWORK: "testnet", RPC_URL: serverRpc, PUBLIC_RPC_URL: publicRpc }),
+      store,
+      { getStatus: () => ({ running: false, cursor: "0", head: null, finalizedHead: null, lastError: null, lastRunAt: null }) } as any,
+    );
+    await app.ready();
+
+    const result = await app.inject({ method: "GET", url: "/api/config" });
+    assert.equal(result.statusCode, 200);
+    assert.equal((result.json() as { rpcUrl: string }).rpcUrl, publicRpc);
+    assert.equal(result.body.includes(serverRpc), false);
+  } finally {
+    await app.close();
+    store.close();
+  }
+});
+
+test("routes: health does not disclose indexer error details", async () => {
+  const app = Fastify();
+  const store = new Store(":memory:");
+  const serverRpc = "https://provider.example/v1/server-secret?api-key=also-secret";
+  try {
+    registerRoutes(
+      app,
+      loadConfig({ NETWORK: "testnet", RPC_URL: serverRpc }),
+      store,
+      {
+        getStatus: () => ({
+          running: true,
+          cursor: "0",
+          head: null,
+          finalizedHead: null,
+          lastError: `HTTP request failed for ${serverRpc}`,
+          lastRunAt: null,
+        }),
+      } as any,
+    );
+    await app.ready();
+
+    const result = await app.inject({ method: "GET", url: "/api/health" });
+    assert.equal(result.statusCode, 200);
+    assert.equal(result.body.includes(serverRpc), false);
+    assert.equal(
+      (result.json() as { indexer: { lastError: string | null } }).indexer.lastError,
+      "Indexer error; check server logs.",
+    );
+  } finally {
+    await app.close();
+    store.close();
+  }
+});
+
 test("routes: public fallback traffic cannot consume the edge assistant quota", async () => {
   const app = Fastify();
   const store = new Store(":memory:");

@@ -54,24 +54,33 @@ export function registerRoutes(
   const remoteAssistantGuard = new AssistantGuard(config.assistant);
   const fallbackAssistantGuard = new AssistantGuard(config.assistant);
 
-  app.get("/api/health", async () => ({
-    ok: true,
-    network: config.network,
-    chainId: config.chain.id,
-    payoutsAddress: config.payoutsAddress,
-    tokenAddress: config.tokenAddress,
-    explorer: config.chain.blockExplorers?.default.url ?? null,
-    categories: CATEGORIES,
-    assistant: config.kimi.apiKey === null || !config.kimi.enabled ? "local" : "kimi",
-    counts: store.counts(),
-    indexer: indexer.getStatus(),
-  }));
+  app.get("/api/health", async () => {
+    const indexerStatus = indexer.getStatus();
+    return {
+      ok: true,
+      network: config.network,
+      chainId: config.chain.id,
+      payoutsAddress: config.payoutsAddress,
+      tokenAddress: config.tokenAddress,
+      explorer: config.chain.blockExplorers?.default.url ?? null,
+      categories: CATEGORIES,
+      assistant: config.kimi.apiKey === null || !config.kimi.enabled ? "local" : "kimi",
+      counts: store.counts(),
+      // Indexer errors can include a provider URL (and its credential). Keep
+      // detailed diagnostics in server logs, but never serialize them to this
+      // unauthenticated endpoint.
+      indexer: {
+        ...indexerStatus,
+        lastError: indexerStatus.lastError === null ? null : "Indexer error; check server logs.",
+      },
+    };
+  });
 
-  /** Config the browser needs so addresses live in one place. */
+  /** Public config. `publicRpcUrl` is intentionally separate from the indexer's RPC_URL. */
   app.get("/api/config", async () => ({
     network: config.network,
     chainId: config.chain.id,
-    rpcUrl: config.rpcUrl,
+    rpcUrl: config.publicRpcUrl,
     payoutsAddress: config.payoutsAddress,
     tokenAddress: config.tokenAddress,
     explorer: config.chain.blockExplorers?.default.url ?? null,

@@ -41,7 +41,10 @@ export type Config = {
   trustProxy: boolean;
   network: "mainnet" | "testnet" | "local";
   chain: typeof monadMainnet | typeof monadTestnet | typeof localChain;
+  /** Server-only RPC endpoint for indexing and the local faucet. */
   rpcUrl: string;
+  /** Browser-safe RPC endpoint intentionally returned from the public config route. */
+  publicRpcUrl: string;
   payoutsAddress: `0x${string}` | null;
   tokenAddress: `0x${string}` | null;
   /** Block the contract was deployed in. Indexing from 0 would scan the whole chain. */
@@ -119,6 +122,20 @@ function nonEmpty(value: string | undefined): string | null {
   return trimmed ? trimmed : null;
 }
 
+function sameUrl(left: string, right: string): boolean {
+  try {
+    const leftUrl = new URL(left);
+    const rightUrl = new URL(right);
+    // URL fragments never reach an RPC server, so they must not make the
+    // same credential-bearing endpoint look different.
+    leftUrl.hash = "";
+    rightUrl.hash = "";
+    return leftUrl.href === rightUrl.href;
+  } catch {
+    return left === right;
+  }
+}
+
 function origins(value: string | undefined): string[] {
   const result = (value ?? "http://localhost:5173")
     .split(",")
@@ -135,6 +152,17 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     env.NETWORK === "mainnet" ? "mainnet" : env.NETWORK === "local" ? "local" : "testnet";
   const chain =
     network === "mainnet" ? monadMainnet : network === "local" ? localChain : monadTestnet;
+  const configuredRpcUrl = nonEmpty(env.RPC_URL);
+  const configuredPublicRpcUrl = nonEmpty(env.PUBLIC_RPC_URL);
+  const rpcUrl = configuredRpcUrl ?? chain.rpcUrls.default.http[0];
+  const publicRpcUrl = configuredPublicRpcUrl ?? chain.rpcUrls.default.http[0];
+  if (
+    configuredRpcUrl !== null &&
+    configuredPublicRpcUrl !== null &&
+    sameUrl(rpcUrl, publicRpcUrl)
+  ) {
+    throw new Error("PUBLIC_RPC_URL must not match RPC_URL");
+  }
   const kimiEnabled = env.KIMI_REMOTE_ENABLED === "true";
   const kimiApiKey = nonEmpty(env.KIMI_API_KEY);
   const kimiEdgeToken = nonEmpty(env.ASSISTANT_EDGE_TOKEN);
@@ -174,7 +202,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     trustProxy: env.TRUST_PROXY === "true",
     network,
     chain,
-    rpcUrl: env.RPC_URL ?? chain.rpcUrls.default.http[0],
+    rpcUrl,
+    // This reaches an unauthenticated browser through /api/config. Never fall
+    // back to RPC_URL: operators commonly put provider credentials in it.
+    publicRpcUrl,
     payoutsAddress: address(env.PAYOUTS_ADDRESS),
     tokenAddress: address(env.TOKEN_ADDRESS),
     startBlock: nonNegativeBigInt(env.START_BLOCK, 0n, "START_BLOCK"),
