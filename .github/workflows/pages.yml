@@ -8,7 +8,9 @@ name: Deploy to GitHub Pages
 # add up the books, and a static host cannot run one. The product routes become
 # live the moment VITE_API_BASE points at a hosted Remi server — host server/
 # somewhere and set a repository variable named API_BASE to its origin
-# (Settings → Variables).
+# (Settings → Variables). VITE_API_BASE and VITE_SITE are accepted as legacy
+# aliases so an existing Pages setup does not silently publish a disconnected
+# dashboard.
 
 on:
   push:
@@ -51,7 +53,7 @@ jobs:
         env:
           # Pages serves this repo under /Remi/.
           BASE_PATH: /${{ github.event.repository.name }}/
-          VITE_API_BASE: ${{ vars.API_BASE }}
+          VITE_API_BASE: ${{ vars.API_BASE || vars.VITE_API_BASE || vars.VITE_SITE }}
         run: npm run build --workspace app
 
       - name: Assemble site

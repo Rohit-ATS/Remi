@@ -168,8 +168,10 @@ The marketing site is complete and standalone. **The app is a shell until a
 server is hosted** — GitHub Pages cannot run the backend that reads the chain
 and adds up the books, so with no API configured the app says so instead of
 failing with a fetch error. To make it live, host `server/` anywhere and set a
-repository variable `API_BASE` to its origin (Settings → Secrets and variables →
-Actions → Variables); the next deploy picks it up.
+repository variable `API_BASE` to the API service's origin (Settings → Secrets
+and variables → Actions → Variables); the next deploy picks it up. The Pages
+workflow also accepts existing variables named `VITE_API_BASE` or `VITE_SITE`,
+but the value must still be the `remi-api` URL, not the GitHub Pages URL.
 
 The public app uses clean URLs, so a shared receipt (`/r/12`) or Passport
 (`/p/0x…`) can be pasted like an ordinary link. The Pages 404 fallback restores
